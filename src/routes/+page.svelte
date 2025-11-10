@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import { Plus, TrendingUp, Home as HomeIcon, Euro, AlertCircle, ChevronDown, ChevronUp } from 'lucide-svelte';
+  import { Plus, TrendingUp, Home as HomeIcon, Euro, AlertCircle, ChevronDown, ChevronUp, Bug } from 'lucide-svelte';
   import { goto } from '$app/navigation';
   import { propertiesStore } from '$lib/stores/properties';
   import { userStore } from '$lib/stores/user';
@@ -10,6 +10,7 @@
   import Modal from '$lib/components/ui/Modal.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import GlassCard from '$lib/components/ui/GlassCard.svelte';
+  import { diagnosticSupabase } from '$lib/services/debug';
   
   import { totalProperties, totalRooms, occupiedRooms, occupancyRate } from '$lib/stores/properties';
   
@@ -50,10 +51,22 @@
       {/if}
     </div>
     
-    <Button on:click={() => showCreateModal = true} className="text-sm">
-      <Plus size={18} class="inline mr-1" />
-      <span class="hidden sm:inline">Nueva</span>
-    </Button>
+    <div class="flex gap-2">
+      {#if $propertiesStore.length === 0}
+        <button
+          on:click={diagnosticSupabase}
+          class="px-3 py-2 text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-lg transition-colors flex items-center gap-1"
+          title="Ejecutar diagnóstico"
+        >
+          <Bug size={16} />
+          <span class="hidden sm:inline">Diagnóstico</span>
+        </button>
+      {/if}
+      <Button on:click={() => showCreateModal = true} className="text-sm">
+        <Plus size={18} class="inline mr-1" />
+        <span class="hidden sm:inline">Nueva</span>
+      </Button>
+    </div>
   </div>
 
   <!-- Stats - Compacto -->
