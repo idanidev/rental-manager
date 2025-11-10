@@ -43,9 +43,11 @@
       <h1 class="text-xl sm:text-2xl md:text-3xl font-bold gradient-text">
         Dashboard
       </h1>
-      <p class="text-xs sm:text-sm text-gray-600">
-        {$userStore?.user_metadata?.name || $userStore?.email || 'Usuario'}
-      </p>
+      {#if $userStore?.user_metadata?.name || $userStore?.email}
+        <p class="text-xs sm:text-sm text-gray-600">
+          Bienvenido, <span class="font-semibold">{$userStore?.user_metadata?.name || $userStore?.email?.split('@')[0]}</span>
+        </p>
+      {/if}
     </div>
     
     <Button on:click={() => showCreateModal = true} className="text-sm">
