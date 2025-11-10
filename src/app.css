@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 min-h-screen;
+  }
+}
+
+@layer components {
+  /* Liquid Glass Cards */
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 
+           rounded-2xl shadow-xl p-6 transition-all duration-300
+           hover:shadow-2xl hover:bg-white/80;
+  }
+  
+  .glass-card-dark {
+    @apply bg-gray-900/70 backdrop-blur-xl border border-gray-700/20 
+           rounded-2xl shadow-xl p-6;
+  }
+
+  /* Gradientes */
+  .gradient-primary {
+    @apply bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500;
+  }
+
+  .gradient-secondary {
+    @apply bg-gradient-to-r from-purple-600 to-pink-600;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 
+           bg-clip-text text-transparent font-bold;
+  }
+
+  /* Botones */
+  .btn-primary {
+    @apply gradient-primary text-white px-6 py-3 rounded-xl 
+           font-semibold shadow-lg hover:shadow-xl 
+           transition-all duration-300 hover:scale-105;
+  }
+
+  .btn-secondary {
+    @apply glass-card px-6 py-3 rounded-xl font-semibold
+           hover:scale-105;
+  }
+
+  /* Inputs */
+  .input-glass {
+    @apply glass-card w-full px-4 py-3 rounded-xl 
+           focus:outline-none focus:ring-2 focus:ring-purple-500/50
+           placeholder:text-gray-400;
+  }
+
+  /* Animaciones */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Estadísticas */
+  .stat-card {
+    @apply glass-card flex flex-col gap-2;
+  }
+
+  .stat-value {
+    @apply text-3xl font-bold gradient-text;
+  }
+
+  .stat-label {
+    @apply text-gray-600 text-sm font-medium;
+  }
+
+  /* Progress bars */
+  .progress-bar {
+    @apply h-2 bg-gray-200/50 rounded-full overflow-hidden;
+  }
+
+  .progress-fill {
+    @apply h-full gradient-primary rounded-full transition-all duration-500;
+  }
+}
