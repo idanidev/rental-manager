@@ -4,7 +4,6 @@
   import Button from '../ui/Button.svelte';
   import Modal from '../ui/Modal.svelte';
   import TenantForm from './TenantForm.svelte';
-  import TenantCard from './TenantCard.svelte';
   import { roomsService } from '$lib/services/rooms';
   import { tenantsService } from '$lib/services/tenants';
   import { createEventDispatcher } from 'svelte';
@@ -133,12 +132,23 @@
             {#each availableTenants as tenant (tenant.id)}
               <button
                 on:click={() => handleTenantSelect(tenant)}
-                class="w-full p-0 rounded-lg border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-all"
+                class="w-full p-4 rounded-lg border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-all text-left flex items-center justify-between"
               >
-                <div class="p-3 flex items-center justify-between">
-                  <TenantCard {tenant} />
-                  <ArrowRight size={20} class="text-gray-400" />
+                <div class="flex items-center gap-3 flex-1">
+                  <div class="p-2 gradient-primary rounded-lg flex-shrink-0">
+                    <Users size={20} class="text-white" />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-gray-800 truncate">{tenant.full_name}</h4>
+                    {#if tenant.email}
+                      <p class="text-sm text-gray-600 truncate">{tenant.email}</p>
+                    {/if}
+                    {#if tenant.monthly_rent}
+                      <p class="text-xs text-purple-600 font-semibold mt-1">{tenant.monthly_rent}€/mes</p>
+                    {/if}
+                  </div>
                 </div>
+                <ArrowRight size={20} class="text-gray-400 flex-shrink-0 ml-2" />
               </button>
             {/each}
           </div>
