@@ -105,9 +105,6 @@
     }
   }
   
-  function fillSuggestedDeposit() {
-    formData.deposit_amount = suggestedDeposit;
-  }
 </script>
 
 <form on:submit|preventDefault={handleSubmit} class="space-y-4">
@@ -391,22 +388,7 @@
               step="0.01"
               class="input-glass flex-1"
             />
-            {#if suggestedDeposit > 0 && formData.deposit_amount != suggestedDeposit}
-              <Button 
-                type="button"
-                variant="secondary" 
-                className="text-xs"
-                on:click={fillSuggestedDeposit}
-              >
-                1 mes
-              </Button>
-            {/if}
           </div>
-          {#if suggestedDeposit > 0}
-            <p class="text-xs text-gray-500 mt-1">
-              Sugerencia: {suggestedDeposit.toFixed(2)}€ (1 mes de renta)
-            </p>
-          {/if}
         </div>
         
         <!-- Notas del contrato -->
