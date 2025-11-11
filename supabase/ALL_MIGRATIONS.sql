@@ -678,6 +678,35 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 
 -- =====================================================
+-- FUNCIÓN PARA BUSCAR USUARIOS POR EMAIL
+-- =====================================================
+
+-- Función para buscar usuarios por email
+-- Esta función permite buscar si un email ya está registrado en la app
+CREATE OR REPLACE FUNCTION get_user_by_email(user_email TEXT)
+RETURNS TABLE (
+  id UUID,
+  email TEXT
+) 
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    au.id,
+    au.email
+  FROM auth.users au
+  WHERE au.email = user_email
+  LIMIT 1;
+END;
+$$;
+
+-- Dar permisos de ejecución
+GRANT EXECUTE ON FUNCTION get_user_by_email(TEXT) TO authenticated;
+
+-- =====================================================
 -- FINALIZADO
 -- =====================================================
 
@@ -687,6 +716,7 @@ BEGIN
   RAISE NOTICE '✅ TODAS LAS MIGRACIONES COMPLETADAS CON ÉXITO';
   RAISE NOTICE '📊 Tablas creadas: properties, property_access, rooms, tenants, expenses, income, invitations';
   RAISE NOTICE '🔒 Row Level Security configurado';
+  RAISE NOTICE '🔍 Función get_user_by_email creada';
   RAISE NOTICE '🎯 Próximo paso: Configurar Storage bucket "room-photos"';
 END $$;
 

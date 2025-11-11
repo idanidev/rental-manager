@@ -20,12 +20,14 @@
   }
 </script>
 
-<Modal bind:open title="Editar Inquilino" size="lg">
-  <TenantForm
-    {tenant}
-    {propertyId}
-    on:success={handleSuccess}
-    on:cancel={handleCancel}
-  />
-</Modal>
+{#if tenant}
+  <Modal bind:open title="Editar Inquilino" size="lg">
+    <TenantForm
+      {tenant}
+      {propertyId}
+      on:success={handleSuccess}
+      on:cancel={handleCancel}
+    />
+  </Modal>
+{/if}
 

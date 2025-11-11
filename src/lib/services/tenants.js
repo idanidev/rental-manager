@@ -7,7 +7,16 @@ export const tenantsService = {
     try {
       const { data, error } = await supabase
         .from('tenants')
-        .select('*')
+        .select(`
+          *,
+          room:rooms!rooms_tenant_id_fkey(
+            id,
+            name,
+            monthly_rent,
+            size_sqm,
+            room_type
+          )
+        `)
         .eq('property_id', propertyId)
         .order('active', { ascending: false })
         .order('full_name');
@@ -45,7 +54,16 @@ export const tenantsService = {
     try {
       const { data, error } = await supabase
         .from('tenants')
-        .select('*')
+        .select(`
+          *,
+          room:rooms!rooms_tenant_id_fkey(
+            id,
+            name,
+            monthly_rent,
+            size_sqm,
+            room_type
+          )
+        `)
         .eq('id', tenantId)
         .single();
 
@@ -181,8 +199,8 @@ export const tenantsService = {
       inactive: tenants.filter(t => !t.active).length,
       withContract: tenants.filter(t => t.contract_start_date).length,
       totalMonthlyRent: tenants
-        .filter(t => t.active && t.monthly_rent)
-        .reduce((sum, t) => sum + parseFloat(t.monthly_rent || 0), 0)
+        .filter(t => t.active && t.room?.monthly_rent)
+        .reduce((sum, t) => sum + parseFloat(t.room?.monthly_rent || 0), 0)
     };
   }
 };

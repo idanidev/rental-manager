@@ -29,15 +29,17 @@
   $: firstPhotoUrl = photoCount > 0 ? storageService.getPhotoUrl(room.photos[0]) : null;
   
   // Cargar datos del inquilino si existe
-  onMount(async () => {
-    if (room.tenant_id && propertyId) {
-      try {
-        tenantData = await tenantsService.getTenantById(room.tenant_id);
-      } catch (err) {
-        console.error('Error loading tenant:', err);
-      }
+  $: if (room.tenant_id && propertyId) {
+    loadTenant();
+  }
+  
+  async function loadTenant() {
+    try {
+      tenantData = await tenantsService.getTenantById(room.tenant_id);
+    } catch (err) {
+      console.error('Error loading tenant:', err);
     }
-  });
+  }
   
   // Calcular días hasta vencimiento
   $: daysUntilExpiry = tenantData?.contract_end_date 
@@ -250,7 +252,7 @@
   </button>
 </GlassCard>
 
-<!-- Modales de Check-In/Check-Out/Move -->
+<!-- Modales de Check-In/Check-Out/Move (fuera del GlassCard) -->
 {#if propertyId}
   <QuickCheckIn 
     bind:open={showCheckInModal} 
@@ -265,20 +267,19 @@
     on:success={handleSuccess}
   />
   
-  {#if tenantData}
-    <MoveTenantModal 
-      bind:open={showMoveModal}
-      tenant={tenantData}
-      currentRoom={room}
-      {allRooms}
-      on:success={handleSuccess}
-    />
-    
-    <EditTenantModal
-      bind:open={showEditModal}
-      tenant={tenantData}
-      {propertyId}
-      on:success={handleSuccess}
-    />
-  {/if}
+  <MoveTenantModal 
+    bind:open={showMoveModal}
+    tenant={tenantData}
+    currentRoom={room}
+    {allRooms}
+    {propertyId}
+    on:success={handleSuccess}
+  />
+  
+  <EditTenantModal
+    bind:open={showEditModal}
+    tenant={tenantData}
+    {propertyId}
+    on:success={handleSuccess}
+  />
 {/if}

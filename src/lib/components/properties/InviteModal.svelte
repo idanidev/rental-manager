@@ -5,6 +5,10 @@
   import { permissionsService, ROLES } from '$lib/services/permissions';
   import { userStore } from '$lib/stores/user';
   
+  import { createEventDispatcher } from 'svelte';
+  
+  const dispatch = createEventDispatcher();
+  
   export let open = false;
   export let propertyId;
   
@@ -13,8 +17,7 @@
   let loading = false;
   let error = '';
   let success = false;
-  let invitationLink = '';
-  let copied = false;
+  let result = null;
 
   async function handleInvite() {
     if (!email) {
@@ -26,14 +29,13 @@
     error = '';
 
     try {
-      const invitation = await permissionsService.inviteUser(
+      result = await permissionsService.inviteUser(
         propertyId,
         email,
         role,
         $userStore.id
       );
       
-      invitationLink = `${window.location.origin}/accept-invitation?token=${invitation.token}`;
       success = true;
     } catch (err) {
       error = err.message || 'Error al enviar la invitación';
@@ -42,19 +44,31 @@
     }
   }
 
-  function copyLink() {
-    navigator.clipboard.writeText(invitationLink);
-    copied = true;
-    setTimeout(() => copied = false, 2000);
-  }
-
   function reset() {
     email = '';
     role = ROLES.EDITOR;
     error = '';
     success = false;
-    invitationLink = '';
+    result = null;
+  }
+  
+  $: if (!open && (success || email || error)) {
+    // Reset cuando se cierra el modal
+    reset();
+  }
+  
+  function handleClose() {
+    if (success) {
+      dispatch('success', result);
+    }
     open = false;
+    reset();
+  }
+  
+  function handleSuccessClose() {
+    dispatch('success', result);
+    open = false;
+    reset();
   }
 </script>
 
@@ -95,7 +109,7 @@
       {/if}
 
       <div class="flex gap-3">
-        <Button type="button" variant="secondary" on:click={reset}>
+        <Button type="button" variant="secondary" on:click={handleClose}>
           Cancelar
         </Button>
         <Button type="submit" disabled={loading} className="flex-1">
@@ -105,34 +119,32 @@
       </div>
     </form>
   {:else}
-    <!-- Invitación enviada exitosamente -->
+    <!-- Resultado de la invitación -->
     <div class="space-y-4">
-      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl">
-        ✓ Invitación enviada correctamente a {email}
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Link de invitación (válido 7 días)
-        </label>
-        <div class="flex gap-2">
-          <input
-            type="text"
-            value={invitationLink}
-            readonly
-            class="input-glass flex-1"
-          />
-          <Button variant="secondary" on:click={copyLink}>
-            {#if copied}
-              <Check size={20} />
-            {:else}
-              <Copy size={20} />
-            {/if}
-          </Button>
+      {#if result?.type === 'direct'}
+        <!-- Usuario añadido directamente -->
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl">
+          <p class="font-bold mb-1">✓ Usuario añadido exitosamente</p>
+          <p class="text-sm">{email} ya tenía cuenta y se le ha dado acceso directo a la propiedad.</p>
         </div>
-      </div>
+      {:else if result?.type === 'pending'}
+        <!-- Invitación pendiente -->
+        <div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-xl">
+          <p class="font-bold mb-1">📧 Invitación guardada</p>
+          <p class="text-sm">{email} recibirá acceso automáticamente cuando se registre en la aplicación.</p>
+        </div>
+        
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+          <p class="text-sm text-gray-700">
+            <strong>💡 Consejo:</strong> Comparte este enlace con {email} para que pueda registrarse:
+          </p>
+          <code class="block mt-2 text-xs bg-white p-2 rounded border text-gray-600 break-all">
+            {window.location.origin}/login
+          </code>
+        </div>
+      {/if}
 
-      <Button fullWidth on:click={reset}>
+      <Button fullWidth on:click={handleSuccessClose}>
         Cerrar
       </Button>
     </div>

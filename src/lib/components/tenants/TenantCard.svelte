@@ -56,10 +56,10 @@
 
     <!-- Datos del Contrato -->
     <div class="grid grid-cols-2 gap-3">
-      {#if tenant.monthly_rent}
+      {#if tenant.room?.monthly_rent}
         <div class="flex items-center gap-2 text-sm">
           <Euro size={16} class="text-purple-600" />
-          <span class="font-semibold">{tenant.monthly_rent}€/mes</span>
+          <span class="font-semibold">{tenant.room.monthly_rent}€/mes</span>
         </div>
       {/if}
       

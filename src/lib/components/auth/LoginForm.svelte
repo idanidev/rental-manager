@@ -2,6 +2,7 @@
   import { Mail, Lock, LogIn } from 'lucide-svelte';
   import { authService } from '$lib/services/auth';
   import { goto } from '$app/navigation';
+  import { userStore } from '$lib/stores/user';
   import Button from '../ui/Button.svelte';
   
   let email = '';
@@ -35,6 +36,11 @@
     try {
       if (mode === 'login') {
         await authService.signIn(email, password);
+        
+        // Esperar a que el userStore se actualice
+        await userStore.refresh();
+        
+        // Navegar al dashboard - el layout cargará las propiedades reactivamente
         goto('/');
       } else {
         await authService.signUp(email, password, name);

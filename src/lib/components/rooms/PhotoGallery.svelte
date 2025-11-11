@@ -1,8 +1,9 @@
 <script>
   import { Camera, X, Upload, Image as ImageIcon, Loader, Download } from 'lucide-svelte';
   import Button from '../ui/Button.svelte';
+  import Lightbox from '../ui/Lightbox.svelte';
   import { storageService } from '$lib/services/storage';
-  
+  import { toast } from '$lib/stores/toast';
   
   export let photos = [];
   export let propertyId;
@@ -11,9 +12,9 @@
   
   let uploading = false;
   let uploadProgress = 0;
-  let error = '';
   let fileInput;
-  let selectedPhoto = null;
+  let showLightbox = false;
+  let currentPhotoIndex = 0;
   
   const MAX_PHOTOS = 10;
   
@@ -24,13 +25,11 @@
     
     // Validar número máximo de fotos
     if (photos.length + files.length > MAX_PHOTOS) {
-      error = `Máximo ${MAX_PHOTOS} fotos por habitación`;
-      setTimeout(() => error = '', 3000);
+      toast.warning(`Máximo ${MAX_PHOTOS} fotos por habitación`);
       return;
     }
     
     uploading = true;
-    error = '';
     
     try {
       for (const file of files) {
@@ -44,13 +43,14 @@
         photos = [...photos, result.path];
       }
       
+      toast.success(`${files.length} foto${files.length > 1 ? 's' : ''} subida${files.length > 1 ? 's' : ''} correctamente`);
+      
       // Resetear input
       if (fileInput) {
         fileInput.value = '';
       }
     } catch (err) {
-      error = err.message || 'Error al subir la foto';
-      setTimeout(() => error = '', 5000);
+      toast.error(err.message || 'Error al subir la foto');
     } finally {
       uploading = false;
     }
@@ -65,18 +65,15 @@
       
       // Eliminar de la lista
       photos = photos.filter((_, i) => i !== index);
+      toast.success('Foto eliminada');
     } catch (err) {
-      error = err.message || 'Error al eliminar la foto';
-      setTimeout(() => error = '', 5000);
+      toast.error(err.message || 'Error al eliminar la foto');
     }
   }
   
-  function openPhotoViewer(photo) {
-    selectedPhoto = photo;
-  }
-  
-  function closePhotoViewer() {
-    selectedPhoto = null;
+  function openPhotoViewer(index) {
+    currentPhotoIndex = index;
+    showLightbox = true;
   }
   
   function getPhotoUrl(path) {
@@ -97,20 +94,25 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(downloadUrl);
+      toast.success('Foto descargada');
     } catch (err) {
-      console.error('Error descargando foto:', err);
-      error = 'Error al descargar la foto';
-      setTimeout(() => error = '', 3000);
+      toast.error('Error al descargar la foto');
     }
   }
   
   async function downloadAllPhotos() {
-    for (let i = 0; i < photos.length; i++) {
-      await downloadPhoto(photos[i], i);
-      // Pequeña pausa entre descargas para evitar bloqueos del navegador
-      await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+      for (let i = 0; i < photos.length; i++) {
+        await downloadPhoto(photos[i], i);
+        // Pequeña pausa entre descargas para evitar bloqueos del navegador
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    } catch (err) {
+      toast.error('Error al descargar fotos');
     }
   }
+  
+  $: photoUrls = photos.map(p => getPhotoUrl(p));
 </script>
 
 <div class="space-y-4">
@@ -168,26 +170,19 @@
     </div>
   </div>
   
-  <!-- Error -->
-  {#if error}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl text-sm">
-      {error}
-    </div>
-  {/if}
-  
   <!-- Galería -->
   {#if photos.length > 0}
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
       {#each photos as photo, index (photo)}
         <div class="relative group aspect-square">
           <button
-            on:click={() => openPhotoViewer(photo)}
-            class="w-full h-full rounded-lg overflow-hidden border-2 border-gray-200 hover:border-purple-500 transition-all"
+            on:click={() => openPhotoViewer(index)}
+            class="w-full h-full rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-purple-500 transition-all shadow-sm hover:shadow-md"
           >
             <img
               src={getPhotoUrl(photo)}
               alt="Foto {index + 1}"
-              class="w-full h-full object-cover transition-transform group-hover:scale-105"
+              class="w-full h-full object-cover transition-transform group-hover:scale-110"
               loading="lazy"
             />
           </button>
@@ -247,27 +242,7 @@
   {/if}
 </div>
 
-<!-- Visor de foto en tamaño completo -->
-{#if selectedPhoto}
-  <div 
-    class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 animate-fade-in"
-    on:click={closePhotoViewer}
-    on:keydown={(e) => e.key === 'Escape' && closePhotoViewer()}
-  >
-    <button
-      on:click={closePhotoViewer}
-      class="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-      aria-label="Cerrar"
-    >
-      <X size={24} class="text-white" />
-    </button>
-    
-    <img
-      src={getPhotoUrl(selectedPhoto)}
-      alt="Foto en tamaño completo"
-      class="max-w-full max-h-full object-contain rounded-lg"
-      on:click={(e) => e.stopPropagation()}
-    />
-  </div>
-{/if}
+<!-- Lightbox -->
+<Lightbox bind:open={showLightbox} images={photoUrls} bind:currentIndex={currentPhotoIndex} />
+
 

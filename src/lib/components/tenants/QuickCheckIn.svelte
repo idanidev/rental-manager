@@ -140,13 +140,10 @@
                   </div>
                   <div class="flex-1 min-w-0">
                     <h4 class="font-bold text-gray-800 truncate">{tenant.full_name}</h4>
-                    {#if tenant.email}
-                      <p class="text-sm text-gray-600 truncate">{tenant.email}</p>
-                    {/if}
-                    {#if tenant.monthly_rent}
-                      <p class="text-xs text-purple-600 font-semibold mt-1">{tenant.monthly_rent}€/mes</p>
-                    {/if}
-                  </div>
+              {#if tenant.email}
+                <p class="text-sm text-gray-600 truncate">{tenant.email}</p>
+              {/if}
+            </div>
                 </div>
                 <ArrowRight size={20} class="text-gray-400 flex-shrink-0 ml-2" />
               </button>

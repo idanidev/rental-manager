@@ -1,7 +1,7 @@
 <script>
   import { 
     User, Mail, Phone, CreditCard, Calendar, Clock, 
-    Shield, FileText, Euro
+    Shield, FileText
   } from 'lucide-svelte';
   import Button from '../ui/Button.svelte';
   import { tenantsService } from '$lib/services/tenants';
@@ -23,7 +23,6 @@
     contract_months: tenant?.contract_months || 12,
     contract_end_date: tenant?.contract_end_date ? tenant.contract_end_date.split('T')[0] : '',
     deposit_amount: tenant?.deposit_amount || '',
-    monthly_rent: tenant?.monthly_rent || '',
     contract_notes: tenant?.contract_notes || '',
     notes: tenant?.notes || '',
     active: tenant?.active !== undefined ? tenant.active : true
@@ -179,36 +178,22 @@
       </div>
     {/if}
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          <Shield size={16} class="inline mr-1" />
-          Fianza/Depósito (€)
-        </label>
-        <input
-          type="number"
-          bind:value={formData.deposit_amount}
-          placeholder="450"
-          class="input-glass"
-          min="0"
-          step="0.01"
-        />
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          <Euro size={16} class="inline mr-1" />
-          Renta Mensual (€)
-        </label>
-        <input
-          type="number"
-          bind:value={formData.monthly_rent}
-          placeholder="450"
-          class="input-glass"
-          min="0"
-          step="0.01"
-        />
-      </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">
+        <Shield size={16} class="inline mr-1" />
+        Fianza/Depósito (€)
+      </label>
+      <input
+        type="number"
+        bind:value={formData.deposit_amount}
+        placeholder="450"
+        class="input-glass"
+        min="0"
+        step="0.01"
+      />
+      <p class="text-xs text-gray-500 mt-1">
+        💡 La renta mensual se define en la habitación, no en el inquilino
+      </p>
     </div>
 
     <div>

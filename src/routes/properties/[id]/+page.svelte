@@ -12,16 +12,17 @@
   import GlassCard from '$lib/components/ui/GlassCard.svelte';
   import Button from '$lib/components/ui/Button.svelte';
   import RoomCard from '$lib/components/rooms/RoomCard.svelte';
-  import InviteModal from '$lib/components/properties/InviteModal.svelte';
+  import UserAccessManager from '$lib/components/properties/UserAccessManager.svelte';
   import PropertyForm from '$lib/components/properties/PropertyForm.svelte';
   import Modal from '$lib/components/ui/Modal.svelte';
+  import { permissionsService } from '$lib/services/permissions';
   
   let property = null;
   let loading = true;
   let error = '';
-  let showInviteModal = false;
   let showEditModal = false;
   let userRole = 'viewer';
+  let showUserAccess = false;
   
   $: propertyId = $page.params.id;
   
@@ -37,7 +38,9 @@
       property = await propertiesService.getProperty(propertyId);
       
       if (property) {
-        userRole = property.property_access?.find(a => a.user_id === $userStore?.id)?.role || 'viewer';
+        // Obtener el rol del usuario actual
+        const access = await permissionsService.checkPermission(propertyId, $userStore?.id);
+        userRole = access || 'viewer';
       }
     } catch (err) {
       error = err.message || 'Error al cargar la propiedad';
@@ -100,9 +103,9 @@
           </Button>
         {/if}
         {#if canInvite()}
-          <Button on:click={() => showInviteModal = true}>
+          <Button variant="secondary" on:click={() => showUserAccess = !showUserAccess}>
             <UserPlus size={20} class="inline mr-2" />
-            Invitar Usuario
+            {showUserAccess ? 'Ocultar' : 'Gestionar'} Usuarios
           </Button>
         {/if}
       </div>
@@ -118,6 +121,11 @@
         {userRole === 'owner' ? 'Propietario' : userRole === 'editor' ? 'Editor' : 'Visor'}
       </span>
     </div>
+    
+    <!-- Gestión de Usuarios -->
+    {#if showUserAccess && canInvite()}
+      <UserAccessManager {propertyId} currentUserRole={userRole} />
+    {/if}
     
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -256,8 +264,6 @@
   </div>
   
   <!-- Modales -->
-  <InviteModal bind:open={showInviteModal} {propertyId} />
-  
   <Modal bind:open={showEditModal} title="Editar Propiedad">
     <PropertyForm 
       {property}

@@ -8,3 +8,23 @@ node_modules
 !.env.example
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Archivos de desarrollo
+*.log
+*.tmp
+.cache
+.vscode
+.idea
+
+# Archivos temporales SQL
+fix-*.sql
+*-temp.sql
+
+# Scripts de desarrollo (no necesarios en producción)
+scripts/*.js
+scripts/*.html
+scripts/*.md
+
+# Documentación de desarrollo
+*-SETUP.md
+CREATE_*.md
