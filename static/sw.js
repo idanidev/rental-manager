@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
 const CACHE_FIRST = [
   '/',
   '/manifest.json',
+  '/icon-180.png',
   '/icon-192.png',
   '/icon-512.png'
 ];

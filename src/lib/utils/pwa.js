@@ -2,45 +2,43 @@
 export function registerServiceWorker() {
   if (typeof window === 'undefined') return;
   
+  // iOS tiene soporte limitado para service workers, verificar primero
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker
-        .register('/sw.js', { scope: '/' })
-        .then((registration) => {
-          console.log('✅ Service Worker registrado:', registration.scope);
-          
-          // Verificar actualizaciones cada hora
-          setInterval(() => {
-            registration.update();
-          }, 60 * 60 * 1000);
-          
-          // Escuchar actualizaciones
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // Nueva versión disponible
-                  console.log('🔄 Nueva versión disponible');
-                  // Opcional: mostrar notificación al usuario
-                  if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
-                    newWorker.postMessage({ type: 'SKIP_WAITING' });
-                    window.location.reload();
-                  }
-                }
-              });
-            }
-          });
-        })
-        .catch((error) => {
-          console.error('❌ Error registrando Service Worker:', error);
-        });
-    });
+    // Detectar si es iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     
-    // Escuchar cambios de estado del service worker
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.log('🔄 Service Worker actualizado, recargando...');
-      window.location.reload();
+    window.addEventListener('load', () => {
+      // En iOS, el service worker puede causar problemas, solo registrar si no es iOS
+      if (!isIOS) {
+        navigator.serviceWorker
+          .register('/sw.js', { scope: '/' })
+          .then((registration) => {
+            console.log('✅ Service Worker registrado:', registration.scope);
+            
+            // Verificar actualizaciones cada hora
+            setInterval(() => {
+              registration.update();
+            }, 60 * 60 * 1000);
+            
+            // Escuchar actualizaciones
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('🔄 Nueva versión disponible');
+                  }
+                });
+              }
+            });
+          })
+          .catch((error) => {
+            console.warn('⚠️ Service Worker no disponible:', error);
+          });
+      } else {
+        console.log('ℹ️ iOS detectado - Service Worker deshabilitado para mejor compatibilidad');
+      }
     });
   }
 }

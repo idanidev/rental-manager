@@ -24,6 +24,24 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     color: var(--text-primary);
+    /* Fix iOS - prevenir zoom automático en inputs */
+    -webkit-text-size-adjust: 100%;
+    /* Fix iOS - touch action */
+    touch-action: manipulation;
+  }
+  
+  /* Fix iOS - inputs no deben hacer zoom */
+  @supports (-webkit-touch-callout: none) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
   }
 }
 
