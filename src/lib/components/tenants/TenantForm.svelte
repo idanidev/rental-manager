@@ -10,8 +10,47 @@
   
   export let tenant = null; // Si existe, estamos editando
   export let propertyId;
+  export let roomMonthlyRent = null; // Precio mensual de la habitación (opcional)
   
   const dispatch = createEventDispatcher();
+  
+  // Obtener fecha de hoy en formato YYYY-MM-DD
+  function getTodayDate() {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  }
+  
+  // Calcular fianza por defecto (igual al precio mensual si está disponible)
+  function getDefaultDeposit() {
+    if (tenant?.deposit_amount) {
+      return tenant.deposit_amount;
+    }
+    if (roomMonthlyRent) {
+      return roomMonthlyRent.toString();
+    }
+    return '';
+  }
+  
+  // Calcular fecha de fin del contrato
+  function calculateEndDate(startDate, months) {
+    if (!startDate || !months) return '';
+    const date = new Date(startDate);
+    date.setMonth(date.getMonth() + parseInt(months));
+    return date.toISOString().split('T')[0];
+  }
+  
+  // Obtener fecha de inicio por defecto (hoy si es nuevo inquilino)
+  const defaultStartDate = tenant?.contract_start_date 
+    ? tenant.contract_start_date.split('T')[0] 
+    : getTodayDate();
+  
+  // Obtener duración por defecto
+  const defaultMonths = tenant?.contract_months || 12;
+  
+  // Calcular fecha de fin por defecto
+  const defaultEndDate = tenant?.contract_end_date
+    ? tenant.contract_end_date.split('T')[0]
+    : calculateEndDate(defaultStartDate, defaultMonths);
   
   let formData = {
     property_id: propertyId,
@@ -19,10 +58,10 @@
     email: tenant?.email || '',
     phone: tenant?.phone || '',
     dni: tenant?.dni || '',
-    contract_start_date: tenant?.contract_start_date ? tenant.contract_start_date.split('T')[0] : '',
-    contract_months: tenant?.contract_months || 12,
-    contract_end_date: tenant?.contract_end_date ? tenant.contract_end_date.split('T')[0] : '',
-    deposit_amount: tenant?.deposit_amount || '',
+    contract_start_date: defaultStartDate,
+    contract_months: defaultMonths,
+    contract_end_date: defaultEndDate,
+    deposit_amount: getDefaultDeposit(),
     contract_notes: tenant?.contract_notes || '',
     notes: tenant?.notes || '',
     active: tenant?.active !== undefined ? tenant.active : true
@@ -31,11 +70,12 @@
   let loading = false;
   let error = '';
 
-  // Calcular fecha de fin del contrato automáticamente
+  // Calcular fecha de fin del contrato automáticamente cuando cambian la fecha de inicio o la duración
   $: if (formData.contract_start_date && formData.contract_months) {
-    const startDate = new Date(formData.contract_start_date);
-    startDate.setMonth(startDate.getMonth() + parseInt(formData.contract_months));
-    formData.contract_end_date = startDate.toISOString().split('T')[0];
+    const calculatedEndDate = calculateEndDate(formData.contract_start_date, formData.contract_months);
+    if (calculatedEndDate !== formData.contract_end_date) {
+      formData.contract_end_date = calculatedEndDate;
+    }
   }
 
   async function handleSubmit() {
@@ -186,13 +226,13 @@
       <input
         type="number"
         bind:value={formData.deposit_amount}
-        placeholder="450"
+        placeholder={roomMonthlyRent ? roomMonthlyRent.toString() : "450"}
         class="input-glass"
         min="0"
         step="0.01"
       />
       <p class="text-xs text-gray-500 mt-1">
-        💡 La renta mensual se define en la habitación, no en el inquilino
+        💡 {roomMonthlyRent ? `La fianza por defecto es igual a la renta mensual (${roomMonthlyRent}€). Puedes modificarla si es necesario.` : 'La renta mensual se define en la habitación, no en el inquilino'}
       </p>
     </div>
 

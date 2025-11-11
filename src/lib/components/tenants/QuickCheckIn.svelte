@@ -182,6 +182,7 @@
         <TenantForm
           {propertyId}
           tenant={selectedTenant}
+          roomMonthlyRent={room.monthly_rent}
           on:success={handleTenantUpdate}
           on:cancel={goBack}
         />
@@ -215,6 +216,7 @@
         
         <TenantForm
           {propertyId}
+          roomMonthlyRent={room.monthly_rent}
           on:success={handleCreateAndAssign}
           on:cancel={goBack}
         />

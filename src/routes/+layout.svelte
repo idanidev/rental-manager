@@ -6,10 +6,8 @@
   import { userStore } from '$lib/stores/user';
   import { propertiesStore } from '$lib/stores/properties';
   import { authService } from '$lib/services/auth';
-  import { Home, LayoutDashboard, LogOut, Menu, X, Moon, Sun, BarChart3, Search } from 'lucide-svelte';
+  import { LogOut, Menu, X, Moon, Sun, User, Settings } from 'lucide-svelte';
   import Toast from '$lib/components/ui/Toast.svelte';
-  import NotificationBell from '$lib/components/notifications/NotificationBell.svelte';
-  import SearchModal from '$lib/components/search/SearchModal.svelte';
   import { theme } from '$lib/stores/theme';
   import { permissionsService } from '$lib/services/permissions';
   import { showToast } from '$lib/stores/toast';
@@ -17,10 +15,9 @@
   
   // No necesitamos exportar data/params en el layout
   
-  let mobileMenuOpen = false;
+  let userMenuOpen = false;
   let loading = true;
   let propertiesLoaded = false;
-  let searchModalOpen = false;
 
   // Handler para cambios de autenticación
   async function handleAuthChange(e) {
@@ -107,15 +104,19 @@
     }
   }
 
-  function toggleMobileMenu() {
-    mobileMenuOpen = !mobileMenuOpen;
+  function toggleUserMenu() {
+    userMenuOpen = !userMenuOpen;
   }
   
-  // Cerrar menú móvil cuando cambia la ruta
-  $: if ($page.url.pathname) {
-    mobileMenuOpen = false;
+  function closeUserMenu() {
+    userMenuOpen = false;
   }
-
+  
+  // Cerrar menú cuando cambia la ruta
+  $: if ($page.url.pathname) {
+    userMenuOpen = false;
+  }
+  
   $: isAuthPage = $page.url.pathname === '/login' || $page.url.pathname.startsWith('/accept-invitation');
 </script>
 
@@ -131,178 +132,94 @@
 {:else}
   <div class="min-h-screen">
     {#if $userStore && !isAuthPage}
-      <!-- Navbar -->
-      <nav class="glass-card m-2 sm:m-4 mb-0 relative z-50">
+      <!-- Navbar Simple -->
+      <nav class="glass-card m-2 sm:m-4 mb-2 relative z-50">
         <div class="flex items-center justify-between gap-4">
-          <!-- Logo -->
-          <a href="/" class="flex items-center gap-2 flex-shrink-0">
+          <!-- Logo - siempre vuelve al dashboard -->
+          <a href="/" class="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity">
             <span class="text-2xl">🏠</span>
-            <span class="text-lg sm:text-xl font-bold gradient-text hidden lg:inline">Rental Manager</span>
+            <span class="text-lg sm:text-xl font-bold gradient-text">Rental Manager</span>
           </a>
           
-          <!-- Search Button -->
-          <button
-            on:click={() => searchModalOpen = true}
-            class="hidden lg:flex items-center gap-2 px-3 py-2 rounded-2xl bg-gray-100/50 hover:bg-gray-100 transition-all duration-300 text-left text-sm text-gray-500 whitespace-nowrap"
-          >
-            <Search size={16} />
-            <span class="hidden xl:inline">Buscar...</span>
-            <kbd class="hidden xl:inline px-2 py-0.5 bg-white rounded text-xs ml-2">⌘K</kbd>
-          </button>
-
-          <!-- Desktop Menu -->
-          <div class="hidden md:flex items-center gap-1 lg:gap-2 flex-shrink-0">
-            <a 
-              href="/" 
-              class="flex items-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-2xl transition-all duration-300 font-medium
-                {$page.url.pathname === '/' 
-                  ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-purple-700 shadow-sm' 
-                  : 'hover:bg-white/60 text-gray-700 hover:text-gray-900'}"
-              title="Dashboard"
-            >
-              <LayoutDashboard size={18} />
-              <span class="text-sm hidden lg:inline">Dashboard</span>
-            </a>
-            
-            <a 
-              href="/properties" 
-              class="flex items-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-2xl transition-all duration-300 font-medium
-                {$page.url.pathname.startsWith('/properties') 
-                  ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-purple-700 shadow-sm' 
-                  : 'hover:bg-white/60 text-gray-700 hover:text-gray-900'}"
-              title="Propiedades"
-            >
-              <Home size={18} />
-              <span class="text-sm hidden lg:inline">Propiedades</span>
-            </a>
-            
-            <a 
-              href="/analytics" 
-              class="flex items-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-2xl transition-all duration-300 font-medium
-                {$page.url.pathname === '/analytics' 
-                  ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-purple-700 shadow-sm' 
-                  : 'hover:bg-white/60 text-gray-700 hover:text-gray-900'}"
-              title="Analytics"
-            >
-              <BarChart3 size={18} />
-              <span class="text-sm hidden lg:inline">Analytics</span>
-            </a>
-
-            <div class="h-6 w-px bg-gray-200 mx-1"></div>
-            
-            <NotificationBell />
-            
+          <!-- User Menu -->
+          <div class="relative user-menu">
             <button
-              on:click={() => theme.toggle()}
-              class="p-2 lg:p-2.5 rounded-2xl hover:bg-white/60 transition-all duration-300"
-              title="Cambiar tema"
+              on:click|stopPropagation={toggleUserMenu}
+              class="flex items-center gap-2 px-3 py-2 rounded-2xl hover:bg-white/60 dark:hover:bg-gray-800/60 transition-all duration-300"
+              aria-label="Menú de usuario"
+              aria-expanded={userMenuOpen}
             >
-              {#if $theme === 'dark'}
-                <Sun size={16} class="text-gray-200 lg:w-[18px] lg:h-[18px]" />
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
+                {$userStore?.user_metadata?.name?.[0]?.toUpperCase() || $userStore?.email?.[0]?.toUpperCase() || 'U'}
+              </div>
+              {#if userMenuOpen}
+                <X size={16} class="text-gray-600 dark:text-gray-400" />
               {:else}
-                <Moon size={16} class="text-gray-700 lg:w-[18px] lg:h-[18px]" />
+                <Menu size={16} class="text-gray-600 dark:text-gray-400" />
               {/if}
             </button>
-
-            <button
-              on:click={handleLogout}
-              class="flex items-center gap-1.5 px-3 lg:px-4 py-2.5 rounded-2xl hover:bg-red-50 text-red-600 transition-all duration-300 font-medium"
-              title="Cerrar sesión"
-            >
-              <LogOut size={18} />
-              <span class="text-sm hidden lg:inline">Salir</span>
-            </button>
-          </div>
-
-          <!-- Mobile Menu Button -->
-          <div class="md:hidden flex items-center gap-2">
-            <button
-              on:click={() => searchModalOpen = true}
-              class="p-2.5 hover:bg-white/60 rounded-2xl transition-all duration-300"
-              aria-label="Buscar"
-            >
-              <Search size={20} />
-            </button>
             
-            <button 
-              on:click={toggleMobileMenu}
-              class="p-2.5 hover:bg-white/60 rounded-2xl transition-all duration-300 flex-shrink-0"
-              aria-label="Menú"
-              aria-expanded={mobileMenuOpen}
-            >
-              {#if mobileMenuOpen}
-                <X size={20} />
-              {:else}
-                <Menu size={20} />
-              {/if}
-            </button>
+            <!-- Dropdown Menu -->
+            {#if userMenuOpen}
+              <div 
+                class="absolute right-0 top-full mt-2 w-48 glass-card rounded-2xl shadow-xl p-2 z-[60] backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 animate-fade-in"
+                on:click|stopPropagation
+              >
+                <div class="px-3 py-2 border-b border-gray-200/50 dark:border-gray-700/50 mb-2">
+                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {$userStore?.user_metadata?.name || 'Usuario'}
+                  </p>
+                  <p class="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    {$userStore?.email}
+                  </p>
+                </div>
+                
+                <button
+                  on:click={() => { theme.toggle(); closeUserMenu(); }}
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors text-gray-700 dark:text-gray-300 text-sm"
+                >
+                  {#if $theme === 'dark'}
+                    <Sun size={16} />
+                    <span>Modo claro</span>
+                  {:else}
+                    <Moon size={16} />
+                    <span>Modo oscuro</span>
+                  {/if}
+                </button>
+                
+                <button
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100/60 dark:hover:bg-gray-800/60 transition-colors text-gray-700 dark:text-gray-300 text-sm opacity-50 cursor-not-allowed"
+                  disabled
+                >
+                  <Settings size={16} />
+                  <span>Configuración</span>
+                </button>
+                
+                <div class="h-px bg-gray-200/50 dark:bg-gray-700/50 my-2"></div>
+                
+                <button
+                  on:click={() => { handleLogout(); closeUserMenu(); }}
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-600 dark:text-red-400 text-sm"
+                >
+                  <LogOut size={16} />
+                  <span>Cerrar sesión</span>
+                </button>
+              </div>
+            {/if}
           </div>
         </div>
-
-        <!-- Mobile Menu -->
-        {#if mobileMenuOpen}
-          <div class="md:hidden mt-4 pt-4 border-t border-gray-200/50 space-y-2 animate-fade-in">
-            <a 
-              href="/" 
-              class="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all touch-manipulation font-medium
-                {$page.url.pathname === '/' 
-                  ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-purple-700' 
-                  : 'hover:bg-white/60 active:bg-white/80 text-gray-700'}"
-            >
-              <LayoutDashboard size={18} />
-              <span class="text-sm">Dashboard</span>
-            </a>
-            
-            <a 
-              href="/properties" 
-              class="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all touch-manipulation font-medium
-                {$page.url.pathname.startsWith('/properties') 
-                  ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-purple-700' 
-                  : 'hover:bg-white/60 active:bg-white/80 text-gray-700'}"
-            >
-              <Home size={18} />
-              <span class="text-sm">Propiedades</span>
-            </a>
-            
-            <a 
-              href="/analytics" 
-              class="flex items-center gap-2 px-4 py-3 rounded-2xl transition-all touch-manipulation font-medium
-                {$page.url.pathname === '/analytics' 
-                  ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-purple-700' 
-                  : 'hover:bg-white/60 active:bg-white/80 text-gray-700'}"
-            >
-              <BarChart3 size={18} />
-              <span class="text-sm">Analytics</span>
-            </a>
-
-            <div class="h-px bg-gray-200/50 my-2"></div>
-            
-            <div class="flex items-center gap-2 px-4">
-              <NotificationBell />
-              <button
-                on:click={() => theme.toggle()}
-                class="flex-1 flex items-center gap-2 px-4 py-3 rounded-2xl hover:bg-white/60 active:bg-white/80 text-gray-700 transition-all touch-manipulation font-medium"
-              >
-                {#if $theme === 'dark'}
-                  <Sun size={18} />
-                  <span class="text-sm">Modo claro</span>
-                {:else}
-                  <Moon size={18} />
-                  <span class="text-sm">Modo oscuro</span>
-                {/if}
-              </button>
-            </div>
-            
-            <button
-              on:click={handleLogout}
-              class="w-full flex items-center gap-2 px-4 py-3 rounded-2xl hover:bg-red-50 active:bg-red-100 text-red-600 transition-all touch-manipulation font-medium"
-            >
-              <LogOut size={18} />
-              <span class="text-sm">Salir</span>
-            </button>
-          </div>
-        {/if}
       </nav>
+      
+      <!-- Backdrop para cerrar menú (solo cuando está abierto) -->
+      {#if userMenuOpen}
+        <div 
+          class="fixed inset-0 z-[55]"
+          on:click={closeUserMenu}
+          role="button"
+          tabindex="-1"
+          aria-label="Cerrar menú"
+        ></div>
+      {/if}
     {/if}
 
     <!-- Main Content -->
@@ -311,9 +228,6 @@
     </main>
   </div>
 {/if}
-
-<!-- Search Modal -->
-<SearchModal bind:open={searchModalOpen} />
 
 <!-- Toast Notifications -->
 <Toast />
