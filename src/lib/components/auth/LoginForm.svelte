@@ -64,7 +64,7 @@
   }
 </script>
 
-<div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+<div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 via-pink-50 to-blue-50">
   <div class="glass-card max-w-md w-full space-y-6 animate-fade-in">
     <!-- Logo/Título -->
     <div class="text-center">
@@ -156,7 +156,7 @@
       <button
         type="button"
         on:click={toggleMode}
-        class="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+        class="text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
       >
         {mode === 'login' ? '¿No tienes cuenta? Regístrate gratis' : '¿Ya tienes cuenta? Inicia sesión'}
       </button>

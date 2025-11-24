@@ -64,7 +64,7 @@
         <!-- Datos del Inquilino -->
         <div class="glass-card">
           <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <User size={20} class="text-purple-600" />
+            <User size={20} class="text-orange-600" />
             Inquilino Actual
           </h3>
           
@@ -79,7 +79,7 @@
                 <p class="text-sm text-gray-600 flex items-center gap-1">
                   <Mail size={14} /> Email
                 </p>
-                <a href="mailto:{room.tenant_email}" class="font-semibold text-purple-600 hover:underline">
+                <a href="mailto:{room.tenant_email}" class="font-semibold text-orange-600 hover:underline">
                   {room.tenant_email}
                 </a>
               </div>
@@ -90,7 +90,7 @@
                 <p class="text-sm text-gray-600 flex items-center gap-1">
                   <Phone size={14} /> Teléfono
                 </p>
-                <a href="tel:{room.tenant_phone}" class="font-semibold text-purple-600 hover:underline">
+                <a href="tel:{room.tenant_phone}" class="font-semibold text-orange-600 hover:underline">
                   {room.tenant_phone}
                 </a>
               </div>
@@ -111,7 +111,7 @@
         {#if room.contract_start_date || room.contract_end_date}
           <div class="glass-card">
             <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <FileText size={20} class="text-purple-600" />
+              <FileText size={20} class="text-orange-600" />
               Contrato de Alquiler
             </h3>
             
@@ -189,9 +189,9 @@
         {#if room.inventory && room.inventory.length > 0}
           <div class="glass-card">
             <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Package size={20} class="text-purple-600" />
+              <Package size={20} class="text-orange-600" />
               Inventario Entregado
-              <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+              <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
                 {room.inventory.length} items
               </span>
             </h3>
@@ -247,14 +247,14 @@
         <div class="glass-card">
           <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
             📸 Fotos de la Habitación
-            <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+            <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
               {room.photos.length}
             </span>
           </h3>
           
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {#each room.photos as photo, index}
-              <div class="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-purple-500 transition-all cursor-pointer group">
+              <div class="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 hover:border-orange-500 transition-all cursor-pointer group">
                 <img
                   src={getPhotoUrl(photo)}
                   alt="Foto {index + 1}"

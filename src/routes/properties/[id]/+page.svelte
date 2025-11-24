@@ -118,7 +118,7 @@
 {#if loading}
   <div class="flex items-center justify-center min-h-[50vh]">
     <div class="text-center">
-      <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
       <p class="text-gray-600">Cargando propiedad...</p>
     </div>
   </div>
@@ -187,8 +187,8 @@
           <div class="p-1 sm:p-1.5 gradient-primary rounded-md sm:rounded-lg mb-1">
             <DoorOpen size={10} class="text-white sm:w-3 sm:h-3" />
           </div>
-          <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Habs</p>
-          <p class="text-sm sm:text-base md:text-lg font-bold gradient-text leading-none">
+          <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Habs</p>
+          <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">
             {rooms.length}
           </p>
         </div>
@@ -199,8 +199,8 @@
           <div class="p-1 sm:p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-md sm:rounded-lg mb-1">
             <Users size={10} class="text-white sm:w-3 sm:h-3" />
           </div>
-          <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ocup</p>
-          <p class="text-sm sm:text-base md:text-lg font-bold gradient-text leading-none">
+          <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ocup</p>
+          <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">
             {rooms.filter(r => r.occupied).length}
           </p>
         </div>
@@ -211,8 +211,8 @@
           <div class="p-1 sm:p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-md sm:rounded-lg mb-1">
             <TrendingUp size={10} class="text-white sm:w-3 sm:h-3" />
           </div>
-          <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">%</p>
-          <p class="text-sm sm:text-base md:text-lg font-bold gradient-text leading-none">
+          <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">%</p>
+          <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">
             {rooms.length > 0 
               ? Math.round((rooms.filter(r => r.occupied).length / rooms.length) * 100)
               : 0}%
@@ -225,8 +225,8 @@
           <div class="p-1 sm:p-1.5 bg-gradient-to-br from-pink-500 to-rose-500 rounded-md sm:rounded-lg mb-1">
             <Euro size={10} class="text-white sm:w-3 sm:h-3" />
           </div>
-          <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ing</p>
-          <p class="text-xs sm:text-sm md:text-base font-bold gradient-text leading-tight">
+          <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ing</p>
+          <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-tight">
             {calculateMonthlyRevenue()}€
           </p>
         </div>

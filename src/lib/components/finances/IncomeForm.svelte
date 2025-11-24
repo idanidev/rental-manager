@@ -121,7 +121,7 @@
       type="checkbox"
       id="paid"
       bind:checked={formData.paid}
-      class="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+      class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
     />
     <label for="paid" class="text-sm font-medium text-gray-700">
       Pagado

@@ -44,7 +44,7 @@
       
       <!-- Role Badge -->
       <span class="px-3 py-1 rounded-full text-xs font-semibold
-        {role === 'owner' ? 'bg-purple-100 text-purple-700' : 
+        {role === 'owner' ? 'bg-orange-100 text-orange-700' : 
          role === 'editor' ? 'bg-blue-100 text-blue-700' : 
          'bg-gray-100 text-gray-700'}">
         {role === 'owner' ? 'Propietario' : role === 'editor' ? 'Editor' : 'Visor'}
@@ -55,7 +55,7 @@
     <div class="grid grid-cols-2 gap-3">
       <div class="stat-card">
         <div class="flex items-center gap-1.5 mb-1">
-          <Users size={16} class="text-purple-600" />
+          <Users size={16} class="text-orange-600" />
           <span class="stat-label text-xs">Habitaciones</span>
         </div>
         <div class="stat-value text-xl">

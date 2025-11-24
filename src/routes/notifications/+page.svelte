@@ -73,7 +73,7 @@
   {#if loading}
     <div class="flex items-center justify-center py-20">
       <div class="text-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
         <p class="text-gray-600">Cargando notificaciones...</p>
       </div>
     </div>

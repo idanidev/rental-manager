@@ -116,7 +116,7 @@
   <!-- Datos Personales -->
   <div class="space-y-4">
     <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-      <User size={20} class="text-purple-600" />
+      <User size={20} class="text-orange-600" />
       Datos Personales
     </h3>
 
@@ -178,7 +178,7 @@
   <!-- Datos del Contrato -->
   <div class="border-t border-gray-200 pt-4 space-y-4">
     <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-      <FileText size={20} class="text-purple-600" />
+      <FileText size={20} class="text-orange-600" />
       Contrato
     </h3>
 
@@ -270,7 +270,7 @@
         <input
           type="checkbox"
           bind:checked={formData.active}
-          class="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+          class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
         />
         <span class="text-sm font-medium text-gray-700">
           Inquilino activo

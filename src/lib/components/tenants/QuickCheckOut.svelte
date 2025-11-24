@@ -85,7 +85,7 @@
         <input
           type="checkbox"
           bind:checked={deactivateTenant}
-          class="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+          class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
         />
         <span class="text-sm text-gray-700">
           Marcar inquilino como inactivo (ya no vive en la propiedad)

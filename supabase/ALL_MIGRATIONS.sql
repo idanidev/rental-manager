@@ -188,6 +188,10 @@ DROP POLICY IF EXISTS "Users can view properties they have access to" ON propert
 CREATE POLICY "Users can view properties they have access to"
   ON properties FOR SELECT
   USING (
+    -- Ver si eres el owner_id directamente
+    owner_id = auth.uid()
+    OR
+    -- O si tienes acceso a través de property_access
     EXISTS (
       SELECT 1 FROM property_access
       WHERE property_access.property_id = properties.id
@@ -198,7 +202,10 @@ CREATE POLICY "Users can view properties they have access to"
 DROP POLICY IF EXISTS "Users can create properties" ON properties;
 CREATE POLICY "Users can create properties"
   ON properties FOR INSERT
-  WITH CHECK (auth.uid() = owner_id);
+  WITH CHECK (
+    auth.uid() = owner_id
+    AND auth.uid() IS NOT NULL
+  );
 
 DROP POLICY IF EXISTS "Owners and editors can update properties" ON properties;
 CREATE POLICY "Owners and editors can update properties"
@@ -242,7 +249,16 @@ CREATE POLICY "Users can view access of their properties"
 DROP POLICY IF EXISTS "System can create property access" ON property_access;
 CREATE POLICY "System can create property access"
   ON property_access FOR INSERT
-  WITH CHECK (true);
+  WITH CHECK (
+    -- Solo permitir si el usuario es el owner_id de la propiedad
+    -- Esto evita recursión porque no consulta property_access
+    -- Para invitaciones posteriores, usar la función grant_property_access (SECURITY DEFINER)
+    EXISTS (
+      SELECT 1 FROM properties p
+      WHERE p.id = property_access.property_id
+      AND p.owner_id = auth.uid()
+    )
+  );
 
 DROP POLICY IF EXISTS "Owners can update access" ON property_access;
 CREATE POLICY "Owners can update access"

@@ -118,10 +118,10 @@
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-      <Camera size={20} class="text-purple-600" />
+      <Camera size={20} class="text-orange-600" />
       Fotos
       {#if photos.length > 0}
-        <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+        <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
           {photos.length}/{MAX_PHOTOS}
         </span>
       {/if}
@@ -177,7 +177,7 @@
         <div class="relative group aspect-square">
           <button
             on:click={() => openPhotoViewer(index)}
-            class="w-full h-full rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-purple-500 transition-all shadow-sm hover:shadow-md"
+            class="w-full h-full rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-orange-500 transition-all shadow-sm hover:shadow-md"
           >
             <img
               src={getPhotoUrl(photo)}

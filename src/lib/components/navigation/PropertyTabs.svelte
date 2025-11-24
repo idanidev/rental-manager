@@ -69,7 +69,7 @@
         on:click={(e) => handleTabClick(tab, e)}
         class="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 whitespace-nowrap touch-manipulation
           {isActive 
-            ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-700 dark:text-purple-400 font-semibold shadow-sm' 
+            ? 'bg-gradient-to-r from-orange-500/20 to-pink-500/20 text-orange-700 dark:text-orange-400 font-semibold shadow-sm' 
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-200'}"
         role="tab"
         aria-selected={isActive}

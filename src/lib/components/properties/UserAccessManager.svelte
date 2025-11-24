@@ -62,7 +62,7 @@
   }
 
   function getRoleColor(role) {
-    if (role === 'owner') return 'bg-purple-100 text-purple-700';
+    if (role === 'owner') return 'bg-orange-100 text-orange-700';
     if (role === 'editor') return 'bg-blue-100 text-blue-700';
     return 'bg-gray-100 text-gray-700';
   }
@@ -111,7 +111,7 @@
   <div class="flex items-center justify-between">
     <div>
       <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-        <Shield size={20} class="text-purple-600" />
+        <Shield size={20} class="text-orange-600" />
         Usuarios con Acceso
       </h3>
       <p class="text-sm text-gray-600 mt-1">
@@ -130,7 +130,7 @@
   <!-- Lista de usuarios -->
   {#if loading}
     <div class="flex justify-center py-8">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
     </div>
   {:else if users.length === 0}
     <GlassCard hover={false}>
@@ -157,7 +157,7 @@
                     {user.user_email || `Usuario ${user.user_id.slice(0, 8)}`}
                   </p>
                   {#if isCurrentUser}
-                    <span class="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                    <span class="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full">
                       Tú
                     </span>
                   {/if}

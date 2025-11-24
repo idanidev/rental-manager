@@ -66,7 +66,7 @@
 {#if !loading && invitations.length > 0}
   <div class="space-y-3">
     <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-      <Mail size={20} class="text-purple-600" />
+      <Mail size={20} class="text-orange-600" />
       Invitaciones Pendientes ({invitations.length})
     </h2>
     
@@ -82,7 +82,7 @@
               </span>
             </div>
             <div class="mt-2 flex flex-wrap items-center gap-2">
-              <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+              <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold">
                 Rol: {getRoleLabel(invitation.role)}
               </span>
             </div>

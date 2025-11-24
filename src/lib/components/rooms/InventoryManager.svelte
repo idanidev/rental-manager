@@ -53,7 +53,7 @@
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-      <Package size={20} class="text-purple-600" />
+      <Package size={20} class="text-orange-600" />
       Inventario de la Habitación
     </h3>
     <Button variant="secondary" on:click={() => addItem()} className="text-sm">
@@ -163,8 +163,8 @@
   
   <!-- Resumen -->
   {#if inventory.length > 0}
-    <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
-      <p class="text-sm font-medium text-purple-800">
+    <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+      <p class="text-sm font-medium text-orange-800">
         📦 Total items: <strong>{inventory.length}</strong> 
         ({inventory.reduce((sum, item) => sum + (item.quantity || 1), 0)} unidades)
       </p>

@@ -199,16 +199,18 @@ CREATE POLICY "Users can view their own access"
 ON property_access FOR SELECT
 USING (user_id = auth.uid());
 
--- Property Access: INSERT (para owners)
+-- Property Access: INSERT (solo para crear acceso inicial - owner_id de la propiedad)
+-- Para invitaciones posteriores, usar la función grant_property_access (SECURITY DEFINER)
 DROP POLICY IF EXISTS "Owners can grant access" ON property_access;
 CREATE POLICY "Owners can grant access"
 ON property_access FOR INSERT
 WITH CHECK (
+  -- Solo permitir si el usuario es el owner_id de la propiedad
+  -- Esto evita recursión porque no consulta property_access
   EXISTS (
-    SELECT 1 FROM property_access pa
-    WHERE pa.property_id = property_access.property_id
-    AND pa.user_id = auth.uid()
-    AND pa.role = 'owner'
+    SELECT 1 FROM properties p
+    WHERE p.id = property_access.property_id
+    AND p.owner_id = auth.uid()
   )
 );
 
@@ -239,16 +241,29 @@ USING (
   AND user_id != auth.uid()
 );
 
--- Properties: SELECT (ver propiedades a las que tienes acceso)
+-- Properties: SELECT (ver propiedades donde eres owner O tienes acceso)
 DROP POLICY IF EXISTS "Users can view properties they have access to" ON properties;
 CREATE POLICY "Users can view properties they have access to"
 ON properties FOR SELECT
 USING (
+  -- Ver si eres el owner_id directamente
+  owner_id = auth.uid()
+  OR
+  -- O si tienes acceso a través de property_access
   EXISTS (
     SELECT 1 FROM property_access
     WHERE property_access.property_id = properties.id
     AND property_access.user_id = auth.uid()
   )
+);
+
+-- Properties: INSERT (crear propiedades)
+DROP POLICY IF EXISTS "Users can create properties" ON properties;
+CREATE POLICY "Users can create properties"
+ON properties FOR INSERT
+WITH CHECK (
+  auth.uid() = owner_id
+  AND auth.uid() IS NOT NULL
 );
 
 -- Rooms: SELECT (ver habitaciones de propiedades accesibles)

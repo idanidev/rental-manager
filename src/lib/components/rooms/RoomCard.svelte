@@ -187,7 +187,7 @@
       <div class="grid grid-cols-2 gap-2">
         {#if !isCommonRoom}
           <div class="flex items-center gap-1.5 text-xs sm:text-sm">
-            <Euro size={14} class="text-purple-600" />
+            <Euro size={14} class="text-orange-600" />
             <span class="font-semibold">{room.monthly_rent}€/mes</span>
           </div>
         {/if}
@@ -218,7 +218,7 @@
           <div class="grid grid-cols-3 gap-1.5">
             <button
               on:click={handleEdit}
-              class="flex items-center justify-center gap-1 px-2 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition-colors text-xs font-medium"
+              class="flex items-center justify-center gap-1 px-2 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg transition-colors text-xs font-medium"
             >
               <Edit size={14} />
               <span class="hidden sm:inline">Editar</span>

@@ -57,14 +57,14 @@
           on:click={(e) => handleClick(item, e)}
           class="flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 flex-1 min-w-0 rounded-xl transition-all duration-200 touch-manipulation relative
             {active 
-              ? 'text-purple-600 dark:text-purple-400' 
+              ? 'text-orange-600 dark:text-orange-400' 
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 active:scale-95'}"
           aria-label={item.label}
         >
           <div class="relative">
             <Icon size={22} stroke-width={active ? 2.5 : 2} />
             {#if active}
-              <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+              <div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-orange-600 dark:bg-orange-400 rounded-full"></div>
             {/if}
           </div>
           <span class="text-[10px] font-semibold leading-tight mt-0.5 truncate w-full text-center">{item.label}</span>

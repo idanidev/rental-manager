@@ -123,7 +123,7 @@
 {#if loading}
   <div class="min-h-screen flex items-center justify-center">
     <div class="text-center">
-      <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
       <p class="text-gray-600">Cargando...</p>
     </div>
   </div>
@@ -149,7 +149,7 @@
               aria-label="Menú de usuario"
               aria-expanded={userMenuOpen}
             >
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
                 {$userStore?.user_metadata?.name?.[0]?.toUpperCase() || $userStore?.email?.[0]?.toUpperCase() || 'U'}
               </div>
               {#if userMenuOpen}

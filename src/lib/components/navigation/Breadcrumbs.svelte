@@ -68,7 +68,7 @@
         <a
           href={crumb.path}
           on:click={(e) => handleClick(crumb, e)}
-          class="flex items-center gap-1.5 text-gray-600 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors"
+          class="flex items-center gap-1.5 text-gray-600 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors"
         >
           {#if crumb.icon}
             <crumb.icon size={16} />

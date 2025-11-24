@@ -73,7 +73,7 @@
   <GlassCard className="max-w-lg w-full">
     {#if loading}
       <div class="text-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
         <p class="text-gray-600">Verificando invitación...</p>
       </div>
     {:else if error}
@@ -116,11 +116,11 @@
         </div>
 
         <!-- Información de la invitación -->
-        <div class="bg-purple-50 border border-purple-200 rounded-xl p-6 space-y-4">
+        <div class="bg-orange-50 border border-orange-200 rounded-xl p-6 space-y-4">
           <div>
             <p class="text-sm text-gray-600 mb-1">Propiedad</p>
             <div class="flex items-center gap-2">
-              <Home size={20} class="text-purple-600" />
+              <Home size={20} class="text-orange-600" />
               <div>
                 <p class="font-bold text-gray-800">{invitation.property.name}</p>
                 <p class="text-sm text-gray-600">{invitation.property.address}</p>
@@ -128,10 +128,10 @@
             </div>
           </div>
 
-          <div class="border-t border-purple-200 pt-4">
+          <div class="border-t border-orange-200 pt-4">
             <p class="text-sm text-gray-600 mb-2">Tu rol de acceso</p>
             <span class="inline-block px-4 py-2 rounded-lg font-semibold
-              {invitation.role === 'owner' ? 'bg-purple-600 text-white' : 
+              {invitation.role === 'owner' ? 'bg-orange-600 text-white' : 
                invitation.role === 'editor' ? 'bg-blue-600 text-white' : 
                'bg-gray-600 text-white'}">
               {invitation.role === 'owner' ? '👑 Propietario - Control Total' : 
@@ -140,7 +140,7 @@
             </span>
           </div>
 
-          <div class="border-t border-purple-200 pt-4">
+          <div class="border-t border-orange-200 pt-4">
             <p class="text-sm text-gray-600 mb-1">Invitado por</p>
             <p class="font-medium text-gray-800">{invitation.inviter?.email || 'Usuario'}</p>
           </div>

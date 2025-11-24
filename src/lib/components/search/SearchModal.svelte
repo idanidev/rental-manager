@@ -116,28 +116,34 @@
   }
   
   function getLabel(result) {
+    if (!result || !result.data) return '';
     const { type, data } = result;
     
     switch (type) {
       case 'property':
-        return `${data.name} • ${data.city}`;
+        return `${data?.name || 'Sin nombre'} • ${data?.city || 'Sin ciudad'}`;
       case 'room':
-        return `${data.name} • ${data.propertyName}`;
+        return `${data?.name || 'Sin nombre'} • ${data?.propertyName || 'Sin propiedad'}`;
       case 'tenant':
-        return `${data.full_name} • ${data.propertyName}`;
+        return `${data?.full_name || 'Sin nombre'} • ${data?.propertyName || 'Sin propiedad'}`;
+      default:
+        return '';
     }
   }
   
   function getSubLabel(result) {
+    if (!result || !result.data) return '';
     const { type, data } = result;
     
     switch (type) {
       case 'property':
-        return data.address;
+        return data?.address || '';
       case 'room':
-        return `${data.monthly_rent}€/mes ${data.occupied ? '• Ocupada' : '• Disponible'}`;
+        return `${data?.monthly_rent || 0}€/mes ${data?.occupied ? '• Ocupada' : '• Disponible'}`;
       case 'tenant':
-        return data.email || data.phone || '';
+        return data?.email || data?.phone || '';
+      default:
+        return '';
     }
   }
 </script>
@@ -167,7 +173,7 @@
           autofocus
         />
         {#if loading}
-          <div class="animate-spin rounded-full h-5 w-5 border-2 border-purple-500 border-t-transparent"></div>
+          <div class="animate-spin rounded-full h-5 w-5 border-2 border-orange-500 border-t-transparent"></div>
         {/if}
         <button
           on:click={close}
@@ -203,10 +209,10 @@
               on:mouseenter={() => selectedIndex = i}
             >
               <div class="p-2 rounded-lg
-                {result.type === 'property' ? 'bg-purple-100' :
+                {result.type === 'property' ? 'bg-orange-100' :
                  result.type === 'room' ? 'bg-blue-100' : 'bg-green-100'}">
                 <Icon size={18} class="
-                  {result.type === 'property' ? 'text-purple-600' :
+                  {result.type === 'property' ? 'text-orange-600' :
                    result.type === 'room' ? 'text-blue-600' : 'text-green-600'}" />
               </div>
               <div class="flex-1 min-w-0">
@@ -214,7 +220,7 @@
                 <p class="text-xs text-gray-500 truncate">{getSubLabel(result)}</p>
               </div>
               <span class="text-xs px-2 py-1 rounded-full font-medium
-                {result.type === 'property' ? 'bg-purple-50 text-purple-600' :
+                {result.type === 'property' ? 'bg-orange-50 text-orange-600' :
                  result.type === 'room' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'}">
                 {result.type === 'property' ? 'Propiedad' :
                  result.type === 'room' ? 'Habitación' : 'Inquilino'}

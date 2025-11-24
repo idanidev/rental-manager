@@ -99,7 +99,7 @@
     {/if}
     
     <!-- Info del inquilino y habitación actual -->
-    <div class="bg-gradient-to-r from-purple-50/50 to-pink-50/50 border border-purple-200/50 rounded-2xl p-5">
+    <div class="bg-gradient-to-r from-orange-50/50 to-pink-50/50 border border-orange-200/50 rounded-2xl p-5">
       <div class="flex items-center justify-center gap-4">
         <div class="text-center">
           <p class="text-xs text-gray-500 mb-2 font-medium">Origen</p>
@@ -108,7 +108,7 @@
           </div>
         </div>
         
-        <ArrowRight size={24} class="text-purple-500 flex-shrink-0" />
+        <ArrowRight size={24} class="text-orange-500 flex-shrink-0" />
         
         <div class="text-center">
           <p class="text-xs text-gray-500 mb-2 font-medium">Destino</p>
@@ -117,7 +117,7 @@
               {@const selectedRoom = availableRooms.find(r => r.id === selectedRoomId)}
               <p class="text-sm font-bold gradient-text">{selectedRoom?.name || '¿?'}</p>
               {#if selectedRoom?.propertyName}
-                <p class="text-xs text-purple-600 mt-1">📍 {selectedRoom.propertyName}</p>
+                <p class="text-xs text-orange-600 mt-1">📍 {selectedRoom.propertyName}</p>
               {/if}
             {:else}
               <p class="text-sm font-bold gradient-text">¿?</p>
@@ -126,7 +126,7 @@
         </div>
       </div>
       
-      <div class="text-center mt-4 pt-4 border-t border-purple-200/50">
+      <div class="text-center mt-4 pt-4 border-t border-orange-200/50">
         <p class="text-sm text-gray-700 font-semibold">
           {tenant.full_name}
         </p>
@@ -143,7 +143,7 @@
           <h3 class="font-semibold text-gray-900">
             Seleccionar Nueva Habitación
             {#if availableRooms.length > 0}
-              <span class="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
+              <span class="ml-2 px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full">
                 {availableRooms.length}
               </span>
             {/if}
@@ -152,7 +152,7 @@
             <input 
               type="checkbox" 
               bind:checked={showAllProperties}
-              class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+              class="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
             />
             <span class="text-xs text-gray-600 group-hover:text-gray-800 transition-colors">
               Todas las propiedades
@@ -168,21 +168,21 @@
               on:click={() => selectedRoomId = room.id}
               class="w-full text-left p-4 rounded-2xl border-2 transition-all duration-300
                 {selectedRoomId === room.id 
-                  ? 'border-purple-500 bg-gradient-to-r from-purple-50/50 to-pink-50/50 shadow-md' 
+                  ? 'border-orange-500 bg-gradient-to-r from-orange-50/50 to-pink-50/50 shadow-md' 
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'}"
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="p-2.5 rounded-xl transition-all
                     {selectedRoomId === room.id 
-                      ? 'bg-purple-500' 
+                      ? 'bg-orange-500' 
                       : 'bg-gray-100'}">
                     <DoorOpen size={20} class="{selectedRoomId === room.id ? 'text-white' : 'text-gray-600'}" />
                   </div>
                   <div>
                     <p class="font-bold text-gray-900">{room.name}</p>
                     {#if room.propertyName}
-                      <p class="text-xs text-purple-600 font-semibold mt-0.5">📍 {room.propertyName}</p>
+                      <p class="text-xs text-orange-600 font-semibold mt-0.5">📍 {room.propertyName}</p>
                     {/if}
                     <div class="flex items-center gap-3 mt-1">
                       <p class="text-sm text-gray-600 font-medium">{room.monthly_rent}€/mes</p>
@@ -193,7 +193,7 @@
                   </div>
                 </div>
                 {#if selectedRoomId === room.id}
-                  <div class="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center shadow-sm">
+                  <div class="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center shadow-sm">
                     <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
                     </svg>
@@ -217,7 +217,7 @@
               <br/>
               <button 
                 on:click={() => showAllProperties = true}
-                class="text-purple-600 hover:text-purple-700 font-medium mt-2 inline-block"
+                class="text-orange-600 hover:text-orange-700 font-medium mt-2 inline-block"
               >
                 Ver habitaciones de otras propiedades
               </button>

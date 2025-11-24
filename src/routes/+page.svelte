@@ -65,8 +65,8 @@
             <div class="p-1 sm:p-1.5 gradient-primary rounded-md sm:rounded-lg mb-1">
               <HomeIcon size={10} class="text-white sm:w-3 sm:h-3" />
             </div>
-            <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Props</p>
-            <p class="text-sm sm:text-base md:text-lg font-bold gradient-text leading-none">{$totalProperties}</p>
+            <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Props</p>
+            <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">{$totalProperties}</p>
           </div>
         </div>
       </GlassCard>
@@ -77,8 +77,8 @@
             <div class="p-1 sm:p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-md sm:rounded-lg mb-1">
               <DoorOpen size={10} class="text-white sm:w-3 sm:h-3" />
             </div>
-            <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Habs</p>
-            <p class="text-xs sm:text-sm md:text-base font-bold gradient-text leading-none">{$occupiedRooms}/{$totalRooms}</p>
+            <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Habs</p>
+            <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">{$occupiedRooms}/{$totalRooms}</p>
           </div>
         </div>
       </GlassCard>
@@ -89,8 +89,8 @@
             <div class="p-1 sm:p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-md sm:rounded-lg mb-1">
               <TrendingUp size={10} class="text-white sm:w-3 sm:h-3" />
             </div>
-            <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ocup</p>
-            <p class="text-sm sm:text-base md:text-lg font-bold gradient-text leading-none">{$occupancyRate}%</p>
+            <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ocup</p>
+            <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">{$occupancyRate}%</p>
           </div>
         </div>
       </GlassCard>
@@ -98,11 +98,11 @@
       <GlassCard hover={false} className="p-0 rounded-xl sm:rounded-2xl">
         <div class="p-1.5 sm:p-2">
           <div class="flex flex-col items-center text-center">
-            <div class="p-1 sm:p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-md sm:rounded-lg mb-1">
+            <div class="p-1 sm:p-1.5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-md sm:rounded-lg mb-1">
               <Euro size={10} class="text-white sm:w-3 sm:h-3" />
             </div>
-            <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ing</p>
-            <p class="text-xs sm:text-sm md:text-base font-bold gradient-text leading-tight">
+            <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ing</p>
+            <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-tight">
               {$propertiesStore.reduce((sum, p) => sum + calculateMonthlyRevenue(p), 0)}€
             </p>
           </div>
@@ -138,7 +138,7 @@
               
               <button
                 on:click={() => goto(`/properties/${property.id}`)}
-                class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors text-sm font-medium"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors text-sm font-medium"
               >
                 Ver detalles
                 <ArrowRight size={16} />
@@ -149,19 +149,19 @@
             <div class="grid grid-cols-4 gap-1 sm:gap-1.5 md:gap-2 mb-4">
               <div class="text-center p-1 sm:p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-800/50 rounded-md sm:rounded-lg">
                 <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 mb-0.5 leading-none">Habs</p>
-                <p class="text-xs sm:text-sm md:text-base font-bold text-gray-800 dark:text-gray-200 leading-none">
+                <p class="text-base sm:text-lg md:text-xl font-bold text-gray-800 dark:text-gray-200 leading-none">
                   {property.rooms?.length || 0}
                 </p>
               </div>
               <div class="text-center p-1 sm:p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-800/50 rounded-md sm:rounded-lg">
                 <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 mb-0.5 leading-none">Ocup</p>
-                <p class="text-xs sm:text-sm md:text-base font-bold text-green-600 dark:text-green-400 leading-none">
+                <p class="text-base sm:text-lg md:text-xl font-bold text-green-600 dark:text-green-400 leading-none">
                   {property.rooms?.filter(r => r.occupied).length || 0}
                 </p>
               </div>
               <div class="text-center p-1 sm:p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-800/50 rounded-md sm:rounded-lg">
-                <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 mb-0.5 leading-none">%</p>
-                <p class="text-xs sm:text-sm md:text-base font-bold text-blue-600 dark:text-blue-400 leading-none">
+                <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 mb-0.5 leading-none">%</p>
+                <p class="text-base sm:text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400 leading-none">
                   {property.rooms?.length > 0 
                     ? Math.round((property.rooms.filter(r => r.occupied).length / property.rooms.length) * 100)
                     : 0}%
@@ -169,7 +169,7 @@
               </div>
               <div class="text-center p-1 sm:p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-800/50 rounded-md sm:rounded-lg">
                 <p class="text-[8px] sm:text-[9px] md:text-[10px] text-gray-600 dark:text-gray-400 mb-0.5 leading-none">Ing</p>
-                <p class="text-[10px] sm:text-xs md:text-sm font-bold text-purple-600 dark:text-purple-400 leading-tight">
+                <p class="text-base sm:text-lg md:text-xl font-bold text-orange-600 dark:text-orange-400 leading-tight">
                   {calculateMonthlyRevenue(property)}€
                 </p>
               </div>
@@ -207,7 +207,7 @@
                     <div class="mt-3 text-center">
                       <button
                         on:click={() => goto(`/properties/${property.id}`)}
-                        class="text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                        class="text-sm text-orange-600 dark:text-orange-400 hover:underline"
                       >
                         Ver todas las habitaciones ({property.rooms.length})
                       </button>

@@ -179,7 +179,7 @@
   {#if formData.room_type === 'private'}
     <div class="border-t border-gray-200 pt-4 mt-4 space-y-4">
       <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-        <User size={20} class="text-purple-600" />
+        <User size={20} class="text-orange-600" />
         Inquilino
       </h3>
       
@@ -198,29 +198,29 @@
           {/each}
         </select>
         <p class="text-xs text-gray-500 mt-1">
-          Selecciona un inquilino de la lista o <a href="/properties/{propertyId}/tenants" target="_blank" class="text-purple-600 hover:underline">añade uno nuevo</a>
+          Selecciona un inquilino de la lista o <a href="/properties/{propertyId}/tenants" target="_blank" class="text-orange-600 hover:underline">añade uno nuevo</a>
         </p>
       </div>
       
       {#if selectedTenant}
-        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
-          <h4 class="font-semibold text-purple-900 mb-2">Datos del Inquilino</h4>
+        <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+          <h4 class="font-semibold text-orange-900 mb-2">Datos del Inquilino</h4>
           <div class="space-y-1 text-sm">
-            <p class="text-purple-800">
+            <p class="text-orange-800">
               <strong>Nombre:</strong> {selectedTenant.full_name}
             </p>
             {#if selectedTenant.email}
-              <p class="text-purple-800">
+              <p class="text-orange-800">
                 <strong>Email:</strong> {selectedTenant.email}
               </p>
             {/if}
             {#if selectedTenant.phone}
-              <p class="text-purple-800">
+              <p class="text-orange-800">
                 <strong>Teléfono:</strong> {selectedTenant.phone}
               </p>
             {/if}
             {#if selectedTenant.contract_end_date}
-              <p class="text-purple-800">
+              <p class="text-orange-800">
                 <strong>Contrato vence:</strong> {new Date(selectedTenant.contract_end_date).toLocaleDateString('es-ES')}
               </p>
             {/if}
@@ -246,7 +246,7 @@
     <!-- Sección de Datos del Inquilino -->
     <div class="border-t border-gray-200 pt-4 mt-2">
       <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <User size={20} class="text-purple-600" />
+        <User size={20} class="text-orange-600" />
         Datos del Inquilino
       </h3>
       
@@ -313,7 +313,7 @@
     <!-- Sección de Contrato -->
     <div class="border-t border-gray-200 pt-4 mt-4">
       <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <FileText size={20} class="text-purple-600" />
+        <FileText size={20} class="text-orange-600" />
         Datos del Contrato
       </h3>
       
@@ -415,10 +415,10 @@
         class="w-full flex items-center justify-between text-left mb-4"
       >
         <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <FileText size={20} class="text-purple-600" />
+          <FileText size={20} class="text-orange-600" />
           Inventario de Entrega
           {#if formData.inventory?.length > 0}
-            <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+            <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
               {formData.inventory.length} items
             </span>
           {/if}
@@ -444,10 +444,10 @@
       class="w-full flex items-center justify-between text-left mb-4"
     >
       <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-        <Camera size={20} class="text-purple-600" />
+        <Camera size={20} class="text-orange-600" />
         Fotos de la {formData.room_type === 'common' ? 'Sala' : 'Habitación'}
         {#if formData.photos?.length > 0}
-          <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+          <span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
             {formData.photos.length} fotos
           </span>
         {/if}

@@ -9,7 +9,7 @@
   };
   
   const colors = {
-    purple: 'border-purple-500 border-t-transparent',
+    purple: 'border-orange-500 border-t-transparent',
     white: 'border-white border-t-transparent',
     gray: 'border-gray-500 border-t-transparent'
   };

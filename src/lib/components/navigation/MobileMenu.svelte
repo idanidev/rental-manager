@@ -65,8 +65,8 @@
           on:click={handleSearch}
           class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl hover:bg-gray-100/80 dark:hover:bg-gray-800/80 active:bg-gray-200/80 dark:active:bg-gray-700/80 text-gray-700 dark:text-gray-300 transition-all touch-manipulation font-medium"
         >
-          <div class="p-2 rounded-xl bg-purple-100/50 dark:bg-purple-900/30">
-            <Search size={20} class="text-purple-600 dark:text-purple-400" />
+          <div class="p-2 rounded-xl bg-orange-100/50 dark:bg-orange-900/30">
+            <Search size={20} class="text-orange-600 dark:text-orange-400" />
           </div>
           <span>Buscar</span>
         </button>

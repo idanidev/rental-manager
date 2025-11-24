@@ -120,7 +120,7 @@
           <h3 class="font-semibold text-gray-900">Seleccionar Inquilino</h3>
           <button
             on:click={() => showCreateNew = true}
-            class="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+            class="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
           >
             <UserPlus size={14} />
             Crear Nuevo
@@ -132,7 +132,7 @@
             {#each availableTenants as tenant (tenant.id)}
               <button
                 on:click={() => handleTenantSelect(tenant)}
-                class="w-full p-4 rounded-lg border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50/30 transition-all text-left flex items-center justify-between"
+                class="w-full p-4 rounded-lg border-2 border-gray-200 hover:border-orange-300 hover:bg-orange-50/30 transition-all text-left flex items-center justify-between"
               >
                 <div class="flex items-center gap-3 flex-1">
                   <div class="p-2 gradient-primary rounded-lg flex-shrink-0">
@@ -173,8 +173,8 @@
           ← Volver a la lista
         </button>
         
-        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4">
-          <p class="text-sm text-purple-800">
+        <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
+          <p class="text-sm text-orange-800">
             <strong>Asignar a:</strong> {room.name}
           </p>
         </div>
