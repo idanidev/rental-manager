@@ -65,8 +65,8 @@
 
 {#if !loading && invitations.length > 0}
   <div class="space-y-3">
-    <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-      <Mail size={20} class="text-orange-600" />
+    <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+      <Mail size={20} class="text-orange-600 dark:text-orange-400" />
       Invitaciones Pendientes ({invitations.length})
     </h2>
     
@@ -74,8 +74,8 @@
       <GlassCard hover={false}>
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div class="flex-1">
-            <h3 class="font-bold text-gray-800">{invitation.property?.name}</h3>
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-600">
+            <h3 class="font-bold text-gray-800 dark:text-gray-200">{invitation.property?.name}</h3>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-700 dark:text-gray-300">
               <span class="flex items-center gap-1">
                 <MapPin size={14} />
                 {invitation.property?.address}

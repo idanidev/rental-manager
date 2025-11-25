@@ -38,8 +38,15 @@ export const authService = {
 
   // Cerrar sesión
   async signOut() {
+    console.log('🔐 Llamando a supabase.auth.signOut()...');
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    console.log('📋 Resultado signOut:', { error });
+    if (error) {
+      console.error('❌ Error en signOut:', error);
+      throw error;
+    }
+    console.log('✅ signOut exitoso');
+    return { success: true };
   },
 
   // Recuperar contraseña

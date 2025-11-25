@@ -36,6 +36,7 @@
   let showPhotos = false;
   let availableTenants = [];
   let selectedTenant = null;
+  let currentRoomId = room?.id || 'new'; // ID actual de la habitación para PhotoGallery
   
   // Cargar inquilinos disponibles
   onMount(async () => {
@@ -69,15 +70,24 @@
   }
 
   async function handleSubmit() {
-    if (!formData.name || !formData.monthly_rent) {
-      error = 'Por favor completa los campos obligatorios';
+    // Validar nombre (obligatorio siempre)
+    if (!formData.name || formData.name.trim() === '') {
+      error = 'Por favor ingresa el nombre del espacio';
       return;
     }
     
-    // Validar datos del inquilino si está ocupada
-    if (formData.occupied && !formData.tenant_name) {
-      error = 'Por favor ingresa el nombre del inquilino';
-      return;
+    // Validar renta mensual solo para habitaciones privadas
+    if (formData.room_type === 'private') {
+      if (!formData.monthly_rent || formData.monthly_rent === '' || parseFloat(formData.monthly_rent) <= 0) {
+        error = 'Por favor ingresa la renta mensual para habitaciones privadas';
+        return;
+      }
+    }
+    
+    // Validar datos del inquilino si está ocupada (esto ya no se usa, pero por si acaso)
+    if (formData.occupied && formData.room_type === 'private' && !formData.tenant_id) {
+      // Esto ya no es necesario porque el tenant_id es opcional
+      // Solo validamos que si está ocupada y es privada, tenga tenant_id o no esté ocupada
     }
 
     loading = true;
@@ -92,11 +102,47 @@
         dataToSend.tenant_id = null;
       }
       
-      if (room) {
-        await roomsService.updateRoom(room.id, dataToSend);
-      } else {
-        await roomsService.createRoom(dataToSend);
+      // Para salas comunes, asegurar que monthly_rent sea 0 o null
+      if (dataToSend.room_type === 'common') {
+        dataToSend.monthly_rent = 0;
+        dataToSend.occupied = false;
+        dataToSend.tenant_id = null;
       }
+      
+      // Convertir monthly_rent a número si es string
+      if (dataToSend.monthly_rent && typeof dataToSend.monthly_rent === 'string') {
+        dataToSend.monthly_rent = parseFloat(dataToSend.monthly_rent);
+      }
+      
+      // Convertir size_sqm a número si es string
+      if (dataToSend.size_sqm && typeof dataToSend.size_sqm === 'string') {
+        dataToSend.size_sqm = parseFloat(dataToSend.size_sqm);
+      }
+      
+      let createdRoom;
+      if (room) {
+        createdRoom = await roomsService.updateRoom(room.id, dataToSend);
+        currentRoomId = createdRoom.id; // Actualizar el ID por si cambió
+      } else {
+        createdRoom = await roomsService.createRoom(dataToSend);
+        // Actualizar roomId para que PhotoGallery pueda subir las fotos pendientes
+        currentRoomId = createdRoom.id;
+        // Actualizar el objeto room para que el resto del formulario funcione
+        room = createdRoom;
+      }
+      
+      // Actualizar formData con las fotos que pudieran haberse subido después de crear
+      // Las fotos se guardarán automáticamente cuando PhotoGallery las suba
+      // Esperar un momento para que PhotoGallery procese las fotos pendientes
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Actualizar la habitación con las fotos finales
+      if (formData.photos && formData.photos.length > 0) {
+        // Filtrar solo las fotos que no son URLs temporales (blob:)
+        const finalPhotos = formData.photos.filter(p => !(typeof p === 'string' && p.startsWith('blob:')));
+        await roomsService.updateRoom(createdRoom.id, { photos: finalPhotos });
+      }
+      
       dispatch('success');
     } catch (err) {
       error = err.message || 'Error al guardar la habitación';
@@ -121,7 +167,7 @@
     <p class="text-xs text-gray-500 mt-1">
       {formData.room_type === 'private' 
         ? 'Habitación que puede ser alquilada a inquilinos' 
-        : 'Espacio común: cocina, salón, baño, etc. No se puede alquilar'}
+        : 'Espacio común: cocina, salón, baños, etc. No se puede alquilar'}
     </p>
   </div>
 
@@ -134,7 +180,7 @@
     <input
       type="text"
       bind:value={formData.name}
-      placeholder={formData.room_type === 'common' ? 'Ej: Cocina, Salón, Baño...' : 'Ej: Habitación 1'}
+      placeholder={formData.room_type === 'common' ? 'Ej: Cocina, Salón, Baño 1, Baño 2...' : 'Ej: Habitación 1'}
       class="input-glass"
       required
     />
@@ -463,7 +509,7 @@
       <PhotoGallery 
         bind:photos={formData.photos}
         {propertyId}
-        roomId={room?.id || 'new'}
+        roomId={currentRoomId}
         canEdit={true}
       />
     {/if}

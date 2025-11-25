@@ -58,6 +58,7 @@
     email: tenant?.email || '',
     phone: tenant?.phone || '',
     dni: tenant?.dni || '',
+    current_address: tenant?.current_address || '',
     contract_start_date: defaultStartDate,
     contract_months: defaultMonths,
     contract_end_date: defaultEndDate,
@@ -172,6 +173,22 @@
         placeholder="12345678A"
         class="input-glass"
       />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">
+        <User size={16} class="inline mr-1" />
+        Domicilio Actual
+      </label>
+      <input
+        type="text"
+        bind:value={formData.current_address}
+        placeholder="Calle, número, ciudad, código postal"
+        class="input-glass"
+      />
+      <p class="text-xs text-gray-500 mt-1">
+        💡 Este domicilio se usará en el contrato. Debe ser diferente de la dirección de la propiedad.
+      </p>
     </div>
   </div>
 

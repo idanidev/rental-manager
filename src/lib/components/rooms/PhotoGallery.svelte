@@ -1,4 +1,5 @@
 <script>
+  import { onDestroy } from 'svelte';
   import { Camera, X, Upload, Image as ImageIcon, Loader, Download } from 'lucide-svelte';
   import Button from '../ui/Button.svelte';
   import Lightbox from '../ui/Lightbox.svelte';
@@ -15,8 +16,62 @@
   let fileInput;
   let showLightbox = false;
   let currentPhotoIndex = 0;
+  let pendingFiles = []; // Archivos pendientes de subir (cuando roomId es 'new')
   
   const MAX_PHOTOS = 10;
+  
+  // Si roomId cambia de 'new' a un ID real, subir fotos pendientes
+  let previousRoomId = roomId;
+  $: {
+    if (roomId && roomId !== 'new' && roomId !== previousRoomId && pendingFiles.length > 0) {
+      // Usar setTimeout para evitar problemas de reactividad
+      setTimeout(() => {
+        uploadPendingFiles();
+      }, 100);
+    }
+    previousRoomId = roomId;
+  }
+  
+  async function uploadPendingFiles() {
+    if (pendingFiles.length === 0 || !roomId || roomId === 'new') return;
+    
+    uploading = true;
+    const filesToUpload = [...pendingFiles];
+    const tempUrlsToReplace = filesToUpload.map(f => f.tempUrl);
+    pendingFiles = [];
+    
+    try {
+      const uploadedPaths = [];
+      
+      for (const fileData of filesToUpload) {
+        // Subir foto ahora que tenemos el roomId real
+        const result = await storageService.uploadRoomPhoto(propertyId, roomId, fileData.file);
+        uploadedPaths.push(result.path);
+        
+        // Limpiar URL temporal
+        if (fileData.tempUrl) {
+          URL.revokeObjectURL(fileData.tempUrl);
+        }
+      }
+      
+      // Reemplazar URLs temporales por paths reales en el array de photos
+      photos = photos.map(photo => {
+        const index = tempUrlsToReplace.indexOf(photo);
+        if (index !== -1) {
+          return uploadedPaths[index];
+        }
+        return photo;
+      });
+      
+      toast.success(`${filesToUpload.length} foto${filesToUpload.length > 1 ? 's' : ''} subida${filesToUpload.length > 1 ? 's' : ''} correctamente`);
+    } catch (err) {
+      toast.error(err.message || 'Error al subir la foto');
+      // Si falla, devolver los archivos a pendientes
+      pendingFiles = [...filesToUpload, ...pendingFiles];
+    } finally {
+      uploading = false;
+    }
+  }
   
   async function handleFileSelect(event) {
     const files = Array.from(event.target.files || []);
@@ -24,7 +79,7 @@
     if (files.length === 0) return;
     
     // Validar número máximo de fotos
-    if (photos.length + files.length > MAX_PHOTOS) {
+    if (photos.length + files.length + pendingFiles.length > MAX_PHOTOS) {
       toast.warning(`Máximo ${MAX_PHOTOS} fotos por habitación`);
       return;
     }
@@ -36,36 +91,70 @@
         // Comprimir imagen antes de subir
         const compressedFile = await storageService.compressImage(file);
         
-        // Subir foto
-        const result = await storageService.uploadRoomPhoto(propertyId, roomId, compressedFile);
-        
-        // Añadir a la lista
-        photos = [...photos, result.path];
+        // Si la habitación aún no existe, guardar temporalmente
+        if (roomId === 'new') {
+          // Crear una URL temporal para previsualización
+          const tempUrl = URL.createObjectURL(compressedFile);
+          pendingFiles = [...pendingFiles, { file: compressedFile, tempUrl }];
+          // Añadir un marcador temporal a photos para mostrar la previsualización
+          photos = [...photos, tempUrl];
+          toast.success(`Foto preparada. Se subirá cuando guardes la habitación.`);
+        } else {
+          // Subir foto directamente si la habitación ya existe
+          const result = await storageService.uploadRoomPhoto(propertyId, roomId, compressedFile);
+          photos = [...photos, result.path];
+        }
       }
       
-      toast.success(`${files.length} foto${files.length > 1 ? 's' : ''} subida${files.length > 1 ? 's' : ''} correctamente`);
+      if (roomId !== 'new') {
+        toast.success(`${files.length} foto${files.length > 1 ? 's' : ''} subida${files.length > 1 ? 's' : ''} correctamente`);
+      }
       
       // Resetear input
       if (fileInput) {
         fileInput.value = '';
       }
     } catch (err) {
-      toast.error(err.message || 'Error al subir la foto');
+      toast.error(err.message || 'Error al preparar la foto');
     } finally {
       uploading = false;
     }
+  }
+  
+  // Función para obtener URL de previsualización
+  function getPhotoPreview(photo) {
+    // Si es una URL temporal (comienza con blob:), devolverla directamente
+    if (typeof photo === 'string' && photo.startsWith('blob:')) {
+      return photo;
+    }
+    // Si no, usar el servicio de storage
+    return storageService.getPhotoUrl(photo);
   }
   
   async function deletePhoto(index) {
     if (!confirm('¿Estás seguro de eliminar esta foto?')) return;
     
     try {
-      const photoPath = photos[index];
-      await storageService.deleteRoomPhoto(photoPath);
+      const photo = photos[index];
       
-      // Eliminar de la lista
-      photos = photos.filter((_, i) => i !== index);
-      toast.success('Foto eliminada');
+      // Si es una foto temporal (blob URL), solo eliminar de la lista
+      if (typeof photo === 'string' && photo.startsWith('blob:')) {
+        // Encontrar y eliminar el archivo correspondiente de pendingFiles
+        const tempUrlIndex = pendingFiles.findIndex(pf => pf.tempUrl === photo);
+        if (tempUrlIndex !== -1) {
+          // Limpiar la URL del blob
+          URL.revokeObjectURL(pendingFiles[tempUrlIndex].tempUrl);
+          pendingFiles = pendingFiles.filter((_, i) => i !== tempUrlIndex);
+        }
+        // Eliminar de la lista
+        photos = photos.filter((_, i) => i !== index);
+        toast.success('Foto eliminada');
+      } else {
+        // Es una foto ya subida, eliminar del storage
+        await storageService.deleteRoomPhoto(photo);
+        photos = photos.filter((_, i) => i !== index);
+        toast.success('Foto eliminada');
+      }
     } catch (err) {
       toast.error(err.message || 'Error al eliminar la foto');
     }
@@ -76,13 +165,24 @@
     showLightbox = true;
   }
   
-  function getPhotoUrl(path) {
-    return storageService.getPhotoUrl(path);
+  function getPhotoUrl(photo) {
+    // Si es una URL temporal, devolverla directamente
+    if (typeof photo === 'string' && photo.startsWith('blob:')) {
+      return photo;
+    }
+    // Si no, usar el servicio de storage
+    return storageService.getPhotoUrl(photo);
   }
   
-  async function downloadPhoto(path, index) {
+  async function downloadPhoto(photo, index) {
     try {
-      const url = getPhotoUrl(path);
+      // Si es una foto temporal, no se puede descargar aún
+      if (typeof photo === 'string' && photo.startsWith('blob:')) {
+        toast.warning('Esta foto se subirá cuando guardes la habitación');
+        return;
+      }
+      
+      const url = getPhotoUrl(photo);
       const response = await fetch(url);
       const blob = await response.blob();
       const downloadUrl = URL.createObjectURL(blob);
@@ -103,9 +203,13 @@
   async function downloadAllPhotos() {
     try {
       for (let i = 0; i < photos.length; i++) {
-        await downloadPhoto(photos[i], i);
-        // Pequeña pausa entre descargas para evitar bloqueos del navegador
-        await new Promise(resolve => setTimeout(resolve, 300));
+        const photo = photos[i];
+        // Solo descargar fotos que ya están subidas
+        if (!(typeof photo === 'string' && photo.startsWith('blob:'))) {
+          await downloadPhoto(photo, i);
+          // Pequeña pausa entre descargas para evitar bloqueos del navegador
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
       }
     } catch (err) {
       toast.error('Error al descargar fotos');
@@ -113,6 +217,21 @@
   }
   
   $: photoUrls = photos.map(p => getPhotoUrl(p));
+  
+  // Limpiar URLs temporales cuando el componente se destruye
+  onDestroy(() => {
+    pendingFiles.forEach(pf => {
+      if (pf.tempUrl) {
+        URL.revokeObjectURL(pf.tempUrl);
+      }
+    });
+    // También limpiar URLs temporales que quedaron en photos
+    photos.forEach(photo => {
+      if (typeof photo === 'string' && photo.startsWith('blob:')) {
+        URL.revokeObjectURL(photo);
+      }
+    });
+  });
 </script>
 
 <div class="space-y-4">
@@ -176,8 +295,13 @@
       {#each photos as photo, index (photo)}
         <div class="relative group aspect-square">
           <button
-            on:click={() => openPhotoViewer(index)}
-            class="w-full h-full rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-orange-500 transition-all shadow-sm hover:shadow-md"
+            type="button"
+            on:click={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              openPhotoViewer(index);
+            }}
+            class="w-full h-full rounded-2xl overflow-hidden border-2 border-gray-200 hover:border-orange-500 transition-all shadow-sm hover:shadow-md focus:outline-none"
           >
             <img
               src={getPhotoUrl(photo)}
@@ -185,20 +309,30 @@
               class="w-full h-full object-cover transition-transform group-hover:scale-110"
               loading="lazy"
             />
+            {#if typeof photo === 'string' && photo.startsWith('blob:')}
+              <div class="absolute top-0 left-0 right-0 bottom-0 bg-black/30 flex items-center justify-center">
+                <div class="text-white text-xs text-center px-2">
+                  <Upload size={16} class="mx-auto mb-1" />
+                  Pendiente
+                </div>
+              </div>
+            {/if}
           </button>
           
           <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              on:click|stopPropagation={() => downloadPhoto(photo, index)}
-              class="p-1.5 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600"
+              type="button"
+              on:click|stopPropagation|preventDefault={() => downloadPhoto(photo, index)}
+              class="p-1.5 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 focus:outline-none"
               aria-label="Descargar foto"
             >
               <Download size={14} />
             </button>
             {#if canEdit}
               <button
-                on:click|stopPropagation={() => deletePhoto(index)}
-                class="p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600"
+                type="button"
+                on:click|stopPropagation|preventDefault={() => deletePhoto(index)}
+                class="p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 focus:outline-none"
                 aria-label="Eliminar foto"
               >
                 <X size={14} />

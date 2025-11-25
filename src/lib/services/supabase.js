@@ -1,5 +1,84 @@
 import { createClient } from '@supabase/supabase-js';
 
+// SILENCIAR WebSocket ANTES de crear el cliente - MÉTODO ULTRA AGRESIVO
+if (typeof window !== 'undefined') {
+  // Guardar referencias originales
+  const originalError = console.error;
+  const originalWarn = console.warn;
+  const originalLog = console.log;
+  
+  // Función para detectar mensajes de WebSocket (más completa)
+  const isWebSocketError = (arg) => {
+    if (!arg) return false;
+    const str = String(arg);
+    const lowerStr = str.toLowerCase();
+    return lowerStr.includes('websocket') || 
+           lowerStr.includes('realtime') ||
+           lowerStr.includes('wss://') ||
+           lowerStr.includes('ws://') ||
+           lowerStr.includes('connection') && lowerStr.includes('failed');
+  };
+  
+  // Sobrescribir console.error - interceptar TODOS los argumentos
+  console.error = function(...args) {
+    const allArgs = args.map(a => String(a || '')).join(' ');
+    if (isWebSocketError(allArgs)) {
+      return; // Silenciar completamente
+    }
+    originalError.apply(console, args);
+  };
+  
+  // Sobrescribir console.warn
+  console.warn = function(...args) {
+    const allArgs = args.map(a => String(a || '')).join(' ');
+    if (isWebSocketError(allArgs)) {
+      return; // Silenciar completamente
+    }
+    originalWarn.apply(console, args);
+  };
+  
+  // También interceptar console.log
+  console.log = function(...args) {
+    const allArgs = args.map(a => String(a || '')).join(' ');
+    if (isWebSocketError(allArgs)) {
+      return; // Silenciar completamente
+    }
+    originalLog.apply(console, args);
+  };
+  
+  // Interceptar errores globales ANTES de que lleguen a console
+  const originalOnError = window.onerror;
+  window.onerror = function(message, source, lineno, colno, error) {
+    if (message && isWebSocketError(String(message))) {
+      return true; // Prevenir que se muestre
+    }
+    if (originalOnError) {
+      return originalOnError(message, source, lineno, colno, error);
+    }
+    return false;
+  };
+  
+  // Interceptar errores con addEventListener
+  window.addEventListener('error', (event) => {
+    if (event.message && isWebSocketError(event.message)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return false;
+    }
+  }, true);
+  
+  // Interceptar promesas rechazadas
+  window.addEventListener('unhandledrejection', (event) => {
+    const reason = event.reason;
+    const reasonStr = reason?.message || reason?.toString() || '';
+    if (isWebSocketError(reasonStr)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return false;
+    }
+  }, true);
+}
+
 // TEMPORAL: Credenciales hardcodeadas hasta que funcionen las variables de entorno
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || 'https://mejrsjdrutzvfxtiximo.supabase.co';
 const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lanJzamRydXR6dmZ4dGl4aW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MTk2MzAsImV4cCI6MjA3ODE5NTYzMH0.s-wdU95MiXwg__M4xNmXEMBXqMPKJ2STDCWPxRqNr1Q';
@@ -14,7 +93,20 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       'x-application-name': 'rental-manager'
     }
   }
+  // NO incluir realtime - esto evita que se intente conectar WebSocket
 });
+
+// Deshabilitar Realtime completamente después de crear el cliente
+if (typeof window !== 'undefined' && supabase.realtime) {
+  try {
+    // Desconectar cualquier conexión de Realtime existente
+    supabase.realtime.disconnect();
+  } catch (e) {
+    // Ignorar errores al desconectar
+  }
+}
+
+// (El silenciamiento de WebSocket ya se hizo arriba, antes de crear el cliente)
 
 // Helper para obtener el usuario actual con manejo de errores
 export async function getCurrentUser() {

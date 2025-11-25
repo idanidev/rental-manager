@@ -48,6 +48,36 @@ export const tenantsService = {
     }
   },
 
+  // Obtener inquilinos disponibles para asignar (sin habitación asignada)
+  async getAvailableTenants(propertyId) {
+    try {
+      // Obtener todos los inquilinos de la propiedad con su habitación asignada
+      const { data: allTenants, error: tenantsError } = await supabase
+        .from('tenants')
+        .select(`
+          *,
+          room:rooms!rooms_tenant_id_fkey(id)
+        `)
+        .eq('property_id', propertyId)
+        .order('active', { ascending: false })
+        .order('full_name');
+
+      if (tenantsError) throw tenantsError;
+
+      // Filtrar: solo mostrar inquilinos que NO tienen habitación asignada
+      // Esto incluye tanto activos como inactivos sin habitación
+      const available = (allTenants || []).filter(tenant => {
+        // Si no tiene habitación asignada (room es null o array vacío), está disponible
+        return !tenant.room || (Array.isArray(tenant.room) && tenant.room.length === 0);
+      });
+
+      return available;
+    } catch (error) {
+      console.error('Error fetching available tenants:', error);
+      throw new Error(handleSupabaseError(error, 'getAvailableTenants'));
+    }
+  },
+
   // Obtener un inquilino por ID
   async getTenantById(tenantId) {
 

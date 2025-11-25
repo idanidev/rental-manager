@@ -1,8 +1,9 @@
 <script>
-  import { Mail, Lock, LogIn } from 'lucide-svelte';
+  import { Mail, Lock, LogIn, X, ChevronDown } from 'lucide-svelte';
   import { authService } from '$lib/services/auth';
   import { goto } from '$app/navigation';
   import { userStore } from '$lib/stores/user';
+  import { onMount } from 'svelte';
   import Button from '../ui/Button.svelte';
   
   let email = '';
@@ -12,6 +13,103 @@
   let success = '';
   let mode = 'login'; // 'login' o 'register'
   let name = '';
+  let savedEmails = [];
+  let showEmailDropdown = false;
+  let emailInputElement;
+  
+  const STORAGE_KEY_LAST_EMAIL = 'rental_manager_last_email';
+  const STORAGE_KEY_SAVED_EMAILS = 'rental_manager_saved_emails';
+  const MAX_SAVED_EMAILS = 5;
+
+  // Cargar emails guardados al montar
+  onMount(() => {
+    loadSavedEmails();
+    
+    // Cargar último email usado
+    if (typeof window !== 'undefined') {
+      const lastEmail = localStorage.getItem(STORAGE_KEY_LAST_EMAIL);
+      if (lastEmail) {
+        email = lastEmail;
+      }
+      
+      // Listener para cerrar dropdown al hacer click fuera
+      document.addEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+      };
+    }
+  });
+
+  function loadSavedEmails() {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_SAVED_EMAILS);
+      if (saved) {
+        savedEmails = JSON.parse(saved).filter(e => e && e.trim() !== '');
+      }
+    } catch (err) {
+      console.error('Error loading saved emails:', err);
+      savedEmails = [];
+    }
+  }
+
+  function saveEmail(emailToSave) {
+    if (!emailToSave || typeof window === 'undefined') return;
+    
+    // Guardar como último email usado
+    localStorage.setItem(STORAGE_KEY_LAST_EMAIL, emailToSave);
+    
+    // Agregar a la lista de emails guardados (sin duplicados)
+    const emailLower = emailToSave.toLowerCase().trim();
+    if (!savedEmails.find(e => e.toLowerCase() === emailLower)) {
+      savedEmails.unshift(emailToSave.trim());
+      // Mantener solo los últimos N emails
+      if (savedEmails.length > MAX_SAVED_EMAILS) {
+        savedEmails = savedEmails.slice(0, MAX_SAVED_EMAILS);
+      }
+      
+      try {
+        localStorage.setItem(STORAGE_KEY_SAVED_EMAILS, JSON.stringify(savedEmails));
+      } catch (err) {
+        console.error('Error saving emails:', err);
+      }
+    }
+  }
+
+  function removeSavedEmail(emailToRemove, e) {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
+    savedEmails = savedEmails.filter(e => e.toLowerCase() !== emailToRemove.toLowerCase());
+    
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY_SAVED_EMAILS, JSON.stringify(savedEmails));
+      } catch (err) {
+        console.error('Error saving emails:', err);
+      }
+    }
+    
+    // Si era el email actual, limpiarlo
+    if (email.toLowerCase() === emailToRemove.toLowerCase()) {
+      email = '';
+    }
+  }
+
+  function selectEmail(selectedEmail) {
+    email = selectedEmail;
+    showEmailDropdown = false;
+    // Dar foco al campo de contraseña
+    if (typeof document !== 'undefined') {
+      const passwordInput = document.getElementById('password-input');
+      if (passwordInput && passwordInput.focus) {
+        setTimeout(() => passwordInput.focus(), 100);
+      }
+    }
+  }
 
   async function handleSubmit() {
     if (!email || !password) {
@@ -37,6 +135,9 @@
       if (mode === 'login') {
         await authService.signIn(email, password);
         
+        // Guardar email después de login exitoso
+        saveEmail(email);
+        
         // Esperar a que el userStore se actualice
         await userStore.refresh();
         
@@ -44,6 +145,10 @@
         goto('/');
       } else {
         await authService.signUp(email, password, name);
+        
+        // Guardar email después de registro
+        saveEmail(email);
+        
         success = '¡Cuenta creada! Revisa tu email para confirmar tu cuenta.';
         setTimeout(() => {
           mode = 'login';
@@ -61,6 +166,14 @@
     mode = mode === 'login' ? 'register' : 'login';
     error = '';
     success = '';
+    showEmailDropdown = false;
+  }
+  
+  // Cerrar dropdown al hacer click fuera
+  function handleClickOutside(event) {
+    if (emailInputElement && !emailInputElement.contains(event.target)) {
+      showEmailDropdown = false;
+    }
   }
 </script>
 
@@ -94,38 +207,104 @@
         </div>
       {/if}
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+      <div class="relative" bind:this={emailInputElement}>
+        <label for="email-input" class="block text-sm font-medium text-gray-700 mb-2">
           <Mail size={16} class="inline mr-1" />
           Email
         </label>
-        <input
-          type="email"
-          bind:value={email}
-          placeholder="tu@email.com"
-          class="input-glass"
-          required
-          autocomplete="email"
-        />
+        <div class="relative">
+          <input
+            id="email-input"
+            type="email"
+            bind:value={email}
+            placeholder="tu@email.com"
+            class="input-glass pr-10"
+            required
+            autocomplete="email"
+            list="saved-emails-list"
+            on:focus={() => {
+              if (savedEmails.length > 0) {
+                showEmailDropdown = true;
+              }
+            }}
+            on:input={() => {
+              if (email && savedEmails.length > 0) {
+                showEmailDropdown = true;
+              }
+            }}
+          />
+          {#if savedEmails.length > 0}
+            <button
+              type="button"
+              on:click={(e) => {
+                e.stopPropagation();
+                showEmailDropdown = !showEmailDropdown;
+              }}
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              tabindex="-1"
+            >
+              <ChevronDown 
+                size={18} 
+                class="transition-transform {showEmailDropdown ? 'rotate-180' : ''}" 
+              />
+            </button>
+          {/if}
+        </div>
+        
+        <!-- Dropdown de emails guardados -->
+        {#if showEmailDropdown && savedEmails.length > 0}
+          <div class="absolute z-50 w-full mt-1 glass-card rounded-xl shadow-xl border border-gray-200/50 max-h-48 overflow-y-auto">
+            <div class="p-2 space-y-1">
+              {#each savedEmails.filter(e => !email || e.toLowerCase().includes(email.toLowerCase())) as savedEmail (savedEmail)}
+                <div class="flex items-center justify-between group hover:bg-white/60 dark:hover:bg-gray-800/60 rounded-lg px-3 py-2 transition-colors">
+                  <button
+                    type="button"
+                    on:click={() => selectEmail(savedEmail)}
+                    class="flex-1 text-left text-sm text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400"
+                  >
+                    <Mail size={14} class="inline mr-2 text-gray-400" />
+                    {savedEmail}
+                  </button>
+                  <button
+                    type="button"
+                    on:click={(e) => removeSavedEmail(savedEmail, e)}
+                    class="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 transition-all"
+                    title="Eliminar"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
       </div>
+      
+      <!-- Data list para autocompletado del navegador -->
+      <datalist id="saved-emails-list">
+        {#each savedEmails as savedEmail}
+          <option value={savedEmail} />
+        {/each}
+      </datalist>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          <Lock size={16} class="inline mr-1" />
-          Contraseña
-          {#if mode === 'register'}
-            <span class="text-xs text-gray-500 font-normal">(mínimo 6 caracteres)</span>
-          {/if}
-        </label>
-        <input
-          type="password"
-          bind:value={password}
-          placeholder="••••••••"
-          class="input-glass"
-          required
-          minlength={mode === 'register' ? 6 : undefined}
-          autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
-        />
+          <label for="password-input" class="block text-sm font-medium text-gray-700 mb-2">
+            <Lock size={16} class="inline mr-1" />
+            Contraseña
+            {#if mode === 'register'}
+              <span class="text-xs text-gray-500 font-normal">(mínimo 6 caracteres)</span>
+            {/if}
+          </label>
+          <input
+            id="password-input"
+            type="password"
+            bind:value={password}
+            placeholder="••••••••"
+            class="input-glass"
+            required
+            minlength={mode === 'register' ? 6 : undefined}
+            autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
+          />
       </div>
 
       {#if error}

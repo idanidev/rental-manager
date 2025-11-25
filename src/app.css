@@ -70,8 +70,20 @@
   .glass-card {
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    @apply rounded-3xl p-6 transition-all duration-300;
+    @apply rounded-3xl p-2 transition-all duration-300;
     border: 1px solid rgba(253, 186, 116, 0.15);
+  }
+  
+  /* Menú dropdown completamente opaco - sin translucidez */
+  [data-menu-opaque="true"] {
+    background-color: rgb(255, 255, 255) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    opacity: 1 !important;
+  }
+  
+  :root[data-theme="dark"] [data-menu-opaque="true"] {
+    background-color: rgb(17, 24, 39) !important;
   }
   
   :root[data-theme="light"] .glass-card:hover {
@@ -184,7 +196,7 @@
     @apply h-full gradient-primary rounded-full transition-all duration-700 ease-out;
   }
   
-  /* Textos adaptables al tema */
+  /* Textos adaptables al tema - Mejor contraste */
   :root[data-theme="dark"] .text-gray-800 {
     @apply !text-gray-100;
   }
@@ -194,18 +206,96 @@
   }
   
   :root[data-theme="dark"] .text-gray-600 {
-    @apply !text-gray-300;
+    @apply !text-gray-200;
   }
   
   :root[data-theme="dark"] .text-gray-500 {
-    @apply !text-gray-400;
+    @apply !text-gray-300;
   }
   
   :root[data-theme="dark"] .text-gray-900 {
     @apply !text-gray-50;
   }
   
-  /* Backgrounds adaptables */
+  /* Mejorar contraste en modo claro - TEXTOS MÁS OSCUROS */
+  :root[data-theme="light"] .text-gray-400 {
+    @apply !text-gray-600;
+  }
+  
+  :root[data-theme="light"] .text-gray-500 {
+    @apply !text-gray-700;
+  }
+  
+  :root[data-theme="light"] .text-gray-600 {
+    @apply !text-gray-800;
+  }
+  
+  /* TEXTOS EN FONDOS BLANCOS SEMITRANSPARENTES - MÁXIMO CONTRASTE */
+  /* Cambiar TODOS los textos grises claros a oscuros en fondos blancos semitransparentes */
+  :root[data-theme="light"] [class*="bg-white/60"] .text-gray-400,
+  :root[data-theme="light"] [class*="bg-white/70"] .text-gray-400,
+  :root[data-theme="light"] [class*="bg-white/75"] .text-gray-400,
+  :root[data-theme="light"] [class*="bg-white/80"] .text-gray-400 {
+    color: rgb(75 85 99) !important; /* gray-600 */
+  }
+  
+  :root[data-theme="light"] [class*="bg-white/60"] .text-gray-500,
+  :root[data-theme="light"] [class*="bg-white/70"] .text-gray-500,
+  :root[data-theme="light"] [class*="bg-white/75"] .text-gray-500,
+  :root[data-theme="light"] [class*="bg-white/80"] .text-gray-500 {
+    color: rgb(55 65 81) !important; /* gray-700 */
+  }
+  
+  :root[data-theme="light"] [class*="bg-white/60"] .text-gray-600,
+  :root[data-theme="light"] [class*="bg-white/70"] .text-gray-600,
+  :root[data-theme="light"] [class*="bg-white/75"] .text-gray-600,
+  :root[data-theme="light"] [class*="bg-white/80"] .text-gray-600 {
+    color: rgb(31 41 55) !important; /* gray-800 */
+  }
+  
+  :root[data-theme="light"] [class*="bg-white/60"] .text-gray-700,
+  :root[data-theme="light"] [class*="bg-white/70"] .text-gray-700,
+  :root[data-theme="light"] [class*="bg-white/75"] .text-gray-700,
+  :root[data-theme="light"] [class*="bg-white/80"] .text-gray-700 {
+    color: rgb(17 24 39) !important; /* gray-900 */
+  }
+  
+  /* Texto por defecto en contenedores con fondo blanco semitransparente */
+  :root[data-theme="light"] [class*="bg-white/60"] p:not([class*="text-"]),
+  :root[data-theme="light"] [class*="bg-white/70"] p:not([class*="text-"]),
+  :root[data-theme="light"] [class*="bg-white/75"] p:not([class*="text-"]),
+  :root[data-theme="light"] [class*="bg-white/80"] p:not([class*="text-"]) {
+    color: rgb(31 41 55) !important; /* gray-800 */
+  }
+  
+  /* Backgrounds adaptables - ELIMINAR GRISES OSCUROS EN MODO CLARO */
+  :root[data-theme="light"] .bg-gray-50,
+  :root[data-theme="light"] .bg-gray-100,
+  :root[data-theme="light"] .bg-gray-200,
+  :root[data-theme="light"] .bg-gray-300,
+  :root[data-theme="light"] .bg-gray-400,
+  :root[data-theme="light"] .bg-gray-500,
+  :root[data-theme="light"] .bg-gray-600,
+  :root[data-theme="light"] .bg-gray-700,
+  :root[data-theme="light"] .bg-gray-800,
+  :root[data-theme="light"] .bg-gray-900 {
+    @apply !bg-white/70 !important;
+  }
+  
+  /* Mantener grises claros para modo claro */
+  :root[data-theme="light"] .bg-gray-50 {
+    @apply !bg-white/60 !important;
+  }
+  
+  :root[data-theme="light"] .bg-gray-100 {
+    @apply !bg-white/75 !important;
+  }
+  
+  :root[data-theme="light"] .bg-gray-200 {
+    @apply !bg-white/80 !important;
+  }
+  
+  /* Modo oscuro - mantener los originales */
   :root[data-theme="dark"] .bg-gray-50 {
     @apply !bg-gray-800;
   }
@@ -220,6 +310,101 @@
   
   :root[data-theme="dark"] .bg-white {
     @apply !bg-gray-800;
+  }
+  
+  /* FORZAR TEXTO OSCURO EN FONDOS BLANCOS SEMITRANSPARENTES - MÁXIMO CONTRASTE */
+  :root[data-theme="light"] [class*="bg-white/60"] *,
+  :root[data-theme="light"] [class*="bg-white/70"] *,
+  :root[data-theme="light"] [class*="bg-white/75"] *,
+  :root[data-theme="light"] [class*="bg-white/80"] * {
+    color: inherit !important;
+  }
+  
+  /* Textos específicos más oscuros en fondos blancos */
+  :root[data-theme="light"] [class*="bg-white/60"] .text-gray-600,
+  :root[data-theme="light"] [class*="bg-white/60"] .text-gray-500,
+  :root[data-theme="light"] [class*="bg-white/60"] .text-gray-400,
+  :root[data-theme="light"] [class*="bg-white/70"] .text-gray-600,
+  :root[data-theme="light"] [class*="bg-white/70"] .text-gray-500,
+  :root[data-theme="light"] [class*="bg-white/70"] .text-gray-400,
+  :root[data-theme="light"] [class*="bg-white/75"] .text-gray-600,
+  :root[data-theme="light"] [class*="bg-white/75"] .text-gray-500,
+  :root[data-theme="light"] [class*="bg-white/75"] .text-gray-400,
+  :root[data-theme="light"] [class*="bg-white/80"] .text-gray-600,
+  :root[data-theme="light"] [class*="bg-white/80"] .text-gray-500,
+  :root[data-theme="light"] [class*="bg-white/80"] .text-gray-400 {
+    @apply !text-gray-800;
+  }
+  
+  :root[data-theme="light"] [class*="bg-white/60"] .text-gray-700,
+  :root[data-theme="light"] [class*="bg-white/70"] .text-gray-700,
+  :root[data-theme="light"] [class*="bg-white/75"] .text-gray-700,
+  :root[data-theme="light"] [class*="bg-white/80"] .text-gray-700 {
+    @apply !text-gray-900;
+  }
+  
+  /* Hover states más claros en modo claro - FORZAR BLANCOS */
+  :root[data-theme="light"] .hover\:bg-gray-100:hover,
+  :root[data-theme="light"] .hover\:bg-gray-200:hover,
+  :root[data-theme="light"] .hover\:bg-gray-300:hover,
+  :root[data-theme="light"] [class*="hover:bg-gray-100"]:hover,
+  :root[data-theme="light"] [class*="hover:bg-gray-200"]:hover {
+    @apply !bg-white/80 !important;
+  }
+  
+  :root[data-theme="light"] .hover\:bg-gray-50:hover,
+  :root[data-theme="light"] [class*="hover:bg-gray-50"]:hover {
+    @apply !bg-white/70 !important;
+  }
+  
+  /* ELIMINAR TODOS LOS GRISES OSCUROS EN MODO CLARO - REGLA AGRESIVA */
+  :root[data-theme="light"] [class*="bg-gray-50"] {
+    background-color: rgba(255, 255, 255, 0.6) !important;
+  }
+  
+  :root[data-theme="light"] [class*="bg-gray-100"] {
+    background-color: rgba(255, 255, 255, 0.75) !important;
+  }
+  
+  :root[data-theme="light"] [class*="bg-gray-200"] {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+  }
+  
+  :root[data-theme="light"] [class*="bg-gray-300"] {
+    background-color: rgba(255, 255, 255, 0.85) !important;
+  }
+  
+  :root[data-theme="light"] [class*="bg-gray-400"],
+  :root[data-theme="light"] [class*="bg-gray-500"],
+  :root[data-theme="light"] [class*="bg-gray-600"],
+  :root[data-theme="light"] [class*="bg-gray-700"],
+  :root[data-theme="light"] [class*="bg-gray-800"],
+  :root[data-theme="light"] [class*="bg-gray-900"] {
+    background-color: rgba(255, 255, 255, 0.7) !important;
+  }
+  
+  /* Mejorar contraste general - textos más oscuros en modo claro */
+  :root[data-theme="light"] .glass-card .text-gray-500 {
+    @apply !text-gray-700;
+  }
+  
+  :root[data-theme="light"] .glass-card .text-gray-400 {
+    @apply !text-gray-600;
+  }
+  
+  /* Asegurar que los textos principales sean siempre legibles */
+  :root[data-theme="light"] h1, 
+  :root[data-theme="light"] h2, 
+  :root[data-theme="light"] h3, 
+  :root[data-theme="light"] h4 {
+    @apply text-gray-900;
+  }
+  
+  :root[data-theme="dark"] h1, 
+  :root[data-theme="dark"] h2, 
+  :root[data-theme="dark"] h3, 
+  :root[data-theme="dark"] h4 {
+    @apply text-gray-100;
   }
   
   /* Borders adaptables */
@@ -363,5 +548,35 @@
   
   :root[data-theme="dark"] .bg-green-50 {
     @apply !bg-green-900/20;
+  }
+  
+  /* Mejorar contraste en badges y etiquetas */
+  :root[data-theme="light"] .bg-orange-100 {
+    @apply !bg-orange-50 !text-orange-900;
+  }
+  
+  :root[data-theme="light"] .bg-blue-100 {
+    @apply !bg-blue-50 !text-blue-900;
+  }
+  
+  :root[data-theme="light"] .bg-green-100 {
+    @apply !bg-green-50 !text-green-900;
+  }
+  
+  :root[data-theme="light"] .bg-red-100 {
+    @apply !bg-red-50 !text-red-900;
+  }
+  
+  :root[data-theme="light"] .bg-yellow-100 {
+    @apply !bg-yellow-50 !text-yellow-900;
+  }
+  
+  /* Mejorar contraste en textos de estadísticas */
+  :root[data-theme="light"] .stat-label {
+    @apply !text-gray-700;
+  }
+  
+  :root[data-theme="dark"] .stat-label {
+    @apply !text-gray-300;
   }
 }

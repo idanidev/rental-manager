@@ -14,6 +14,45 @@
   let loading = false;
   let error = '';
   let deactivateTenant = true;
+  let tenantData = null;
+  let loadingTenant = false;
+  
+  // Cargar datos del inquilino cuando se abre el modal
+  $: if (open && room?.tenant_id) {
+    // Solo cargar si no tenemos datos o si el tenant_id cambió
+    if (!tenantData || (tenantData.id !== room.tenant_id && !loadingTenant)) {
+      loadTenant();
+    }
+  }
+  
+  // Resetear cuando se cierra el modal
+  $: if (!open) {
+    tenantData = null;
+    loadingTenant = false;
+  }
+  
+  async function loadTenant() {
+    const tenantId = room?.tenant_id;
+    if (!tenantId || loadingTenant) return;
+    
+    // Evitar cargar el mismo inquilino dos veces
+    if (tenantData?.id === tenantId) return;
+    
+    loadingTenant = true;
+    
+    try {
+      const data = await tenantsService.getTenantById(tenantId);
+      // Solo actualizar si el tenant_id sigue siendo el mismo
+      if (room?.tenant_id === tenantId) {
+        tenantData = data;
+      }
+    } catch (err) {
+      console.error('Error loading tenant:', err);
+      tenantData = null;
+    } finally {
+      loadingTenant = false;
+    }
+  }
   
   async function handleCheckOut() {
     loading = true;
@@ -64,22 +103,45 @@
       </div>
     </div>
     
-    {#if room.tenant_id}
-      <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
-        <h4 class="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-          <UserX size={16} />
-          Inquilino Actual
-        </h4>
-        <div class="text-sm text-gray-700 space-y-1">
-          <p><strong>Nombre:</strong> {room.tenant?.full_name || 'No disponible'}</p>
-          {#if room.tenant?.email}
-            <p><strong>Email:</strong> {room.tenant.email}</p>
-          {/if}
-          {#if room.tenant?.contract_end_date}
-            <p><strong>Contrato hasta:</strong> {new Date(room.tenant.contract_end_date).toLocaleDateString('es-ES')}</p>
-          {/if}
+    {#if room?.tenant_id}
+      {#if loadingTenant}
+        <div class="bg-white/60 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <div class="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent"></div>
+            <span class="text-sm">Cargando datos del inquilino...</span>
+          </div>
         </div>
-      </div>
+      {:else if tenantData}
+        <div class="bg-white/60 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+            <UserX size={16} />
+            Inquilino Actual
+          </h4>
+          <div class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+            <p><strong>Nombre:</strong> {tenantData.full_name || 'No disponible'}</p>
+            {#if tenantData.email}
+              <p><strong>Email:</strong> {tenantData.email}</p>
+            {/if}
+            {#if tenantData.phone}
+              <p><strong>Teléfono:</strong> {tenantData.phone}</p>
+            {/if}
+            {#if tenantData.contract_end_date}
+              <p><strong>Contrato hasta:</strong> {new Date(tenantData.contract_end_date).toLocaleDateString('es-ES')}</p>
+            {/if}
+          </div>
+        </div>
+      {:else}
+        <div class="bg-white/60 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+          <h4 class="font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+            <UserX size={16} />
+            Inquilino Actual
+          </h4>
+          <div class="text-sm text-gray-700 dark:text-gray-300">
+            <p><strong>Nombre:</strong> No disponible</p>
+            <p class="text-xs text-gray-500 mt-1">No se pudieron cargar los datos del inquilino</p>
+          </div>
+        </div>
+      {/if}
       
       <label class="flex items-center gap-2 cursor-pointer">
         <input
@@ -87,10 +149,16 @@
           bind:checked={deactivateTenant}
           class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
         />
-        <span class="text-sm text-gray-700">
+        <span class="text-sm text-gray-700 dark:text-gray-300">
           Marcar inquilino como inactivo (ya no vive en la propiedad)
         </span>
       </label>
+    {:else}
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+        <p class="text-sm text-yellow-800 dark:text-yellow-200">
+          ⚠️ Esta habitación no tiene inquilino asignado actualmente.
+        </p>
+      </div>
     {/if}
     
     <div class="flex gap-3 pt-2">

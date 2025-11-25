@@ -1,9 +1,15 @@
 <script>
-  import { User, Mail, Phone, Calendar, Euro, AlertCircle } from 'lucide-svelte';
+  import { User, Mail, Phone, Calendar, Euro, AlertCircle, FileText, Edit } from 'lucide-svelte';
   import GlassCard from '../ui/GlassCard.svelte';
+  import { createEventDispatcher } from 'svelte';
   
   export let tenant;
   export let onClick = null;
+  export let property = null;
+  export let room = null;
+  export let propertyId = null;
+  
+  const dispatch = createEventDispatcher();
   
   // Calcular días hasta vencimiento del contrato
   $: daysUntilExpiry = tenant.contract_end_date 
@@ -12,13 +18,31 @@
   
   $: isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
   $: isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
+  
+  function handleGenerateContract(e) {
+    e.stopPropagation();
+    dispatch('generate-contract', { tenant, property, room });
+  }
+  
+  function handleEdit(e) {
+    e.stopPropagation();
+    dispatch('edit', { tenant });
+  }
+  
+  function handleCardClick() {
+    if (onClick) {
+      onClick();
+    } else {
+      // Si no hay onClick personalizado, abrir edición por defecto
+      dispatch('edit', { tenant });
+    }
+  }
 </script>
 
 <GlassCard>
   <button 
-    on:click={onClick}
+    on:click={handleCardClick}
     class="w-full text-left space-y-3 relative"
-    disabled={!onClick}
   >
     <!-- Header -->
     <div class="flex items-center justify-between">
@@ -90,5 +114,23 @@
       </div>
     {/if}
   </button>
+  
+  <!-- Botones de Acción -->
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+    <button
+      on:click={handleEdit}
+      class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium"
+    >
+      <Edit size={16} />
+      Editar Inquilino
+    </button>
+    <button
+      on:click={handleGenerateContract}
+      class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium"
+    >
+      <FileText size={16} />
+      Generar Contrato
+    </button>
+  </div>
 </GlassCard>
 

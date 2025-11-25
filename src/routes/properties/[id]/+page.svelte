@@ -18,10 +18,17 @@
   import RoomForm from '$lib/components/rooms/RoomForm.svelte';
   import TenantCard from '$lib/components/tenants/TenantCard.svelte';
   import TenantForm from '$lib/components/tenants/TenantForm.svelte';
+  import GenerateContractModal from '$lib/components/tenants/GenerateContractModal.svelte';
+  import EditTenantModal from '$lib/components/tenants/EditTenantModal.svelte';
   import UserAccessManager from '$lib/components/properties/UserAccessManager.svelte';
   import PropertyForm from '$lib/components/properties/PropertyForm.svelte';
+  import ExpenseCard from '$lib/components/finances/ExpenseCard.svelte';
+  import ExpenseForm from '$lib/components/finances/ExpenseForm.svelte';
+  import IncomeCard from '$lib/components/finances/IncomeCard.svelte';
+  import IncomeForm from '$lib/components/finances/IncomeForm.svelte';
   import Modal from '$lib/components/ui/Modal.svelte';
   import { permissionsService } from '$lib/services/permissions';
+  import { showToast } from '$lib/stores/toast';
   
   let property = null;
   let rooms = [];
@@ -34,9 +41,18 @@
   let showRoomModal = false;
   let showTenantModal = false;
   let showUserAccess = false;
+  let showExpenseModal = false;
+  let showIncomeModal = false;
   let selectedRoom = null;
   let selectedTenant = null;
+  let selectedExpense = null;
+  let selectedIncome = null;
   let userRole = 'viewer';
+  let showContractModal = false;
+  let contractTenant = null;
+  let contractRoom = null;
+  let showEditTenantModal = false;
+  let selectedTenantForEdit = null;
   
   $: propertyId = $page.params.id;
   
@@ -54,8 +70,13 @@
       
       if (property) {
         // Obtener rol del usuario
-        const access = await permissionsService.checkPermission(propertyId, $userStore?.id);
-        userRole = access || 'viewer';
+        // Primero verificar si es owner directo
+        if (property.owner_id === $userStore?.id) {
+          userRole = 'owner';
+        } else {
+          const access = await permissionsService.checkPermission(propertyId, $userStore?.id);
+          userRole = access || 'viewer';
+        }
         
         // Cargar datos en paralelo
         const loadPromises = [
@@ -105,12 +126,72 @@
     loadAllData();
   }
   
+  function handleExpenseSuccess() {
+    showExpenseModal = false;
+    selectedExpense = null;
+    loadAllData();
+  }
+  
+  function handleIncomeSuccess() {
+    showIncomeModal = false;
+    selectedIncome = null;
+    loadAllData();
+  }
+  
+  async function handleDeleteExpense(expense) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar este gasto de ${expense.amount}€?`)) {
+      return;
+    }
+    
+    try {
+      await financesService.deleteExpense(expense.id);
+      showToast('Gasto eliminado correctamente', 'success');
+      loadAllData();
+    } catch (err) {
+      showToast('Error al eliminar el gasto', 'error');
+      console.error(err);
+    }
+  }
+  
+  async function handleDeleteIncome(income) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar este ingreso de ${income.amount}€?`)) {
+      return;
+    }
+    
+    try {
+      await financesService.deleteIncome(income.id);
+      showToast('Ingreso eliminado correctamente', 'success');
+      loadAllData();
+    } catch (err) {
+      showToast('Error al eliminar el ingreso', 'error');
+      console.error(err);
+    }
+  }
+  
+  async function handleTogglePaid(income) {
+    try {
+      if (income.paid) {
+        await financesService.updateIncome(income.id, { 
+          paid: false, 
+          payment_date: null 
+        });
+      } else {
+        await financesService.markAsPaid(income.id);
+      }
+      showToast(`Ingreso marcado como ${income.paid ? 'pendiente' : 'pagado'}`, 'success');
+      loadAllData();
+    } catch (err) {
+      showToast('Error al actualizar el ingreso', 'error');
+      console.error(err);
+    }
+  }
+  
   const canEdit = () => userRole === 'owner' || userRole === 'editor';
   const canInvite = () => userRole === 'owner';
   
   function calculateMonthlyRevenue() {
     return rooms
-      .filter(r => r.occupied)
+      .filter(r => r.room_type !== 'common' && r.occupied)
       .reduce((sum, r) => sum + (parseFloat(r.monthly_rent) || 0), 0);
   }
 </script>
@@ -131,47 +212,49 @@
     </div>
   </GlassCard>
 {:else if property}
-  <div class="max-w-7xl mx-auto space-y-6 animate-fade-in">
-    <!-- Header con botón volver -->
-    <div class="flex items-center gap-4">
-      <button
-        on:click={() => goto('/')}
-        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-        aria-label="Volver"
-      >
-        <ArrowLeft size={20} class="text-gray-600 dark:text-gray-400" />
-      </button>
-      <div class="flex-1">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="p-3 gradient-primary rounded-xl">
-            <Home size={28} class="text-white" />
-          </div>
-          <div class="flex-1">
-            <h1 class="text-2xl sm:text-3xl font-bold gradient-text">{property.name}</h1>
-            <div class="flex items-center text-gray-600 dark:text-gray-400 mt-1 text-sm">
-              <MapPin size={16} class="mr-1" />
-              {property.address}
+  <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-fade-in px-3 sm:px-4 md:px-6">
+    <!-- Header con botón volver - Fondo más opaco -->
+    <div class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+        <button
+          on:click={() => goto('/')}
+          class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors flex-shrink-0"
+          aria-label="Volver"
+        >
+          <ArrowLeft size={20} class="text-gray-900 dark:text-gray-300" style="color: rgb(17, 24, 39) !important;" />
+        </button>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 sm:gap-3 mb-2">
+            <div class="p-2 sm:p-3 gradient-primary rounded-xl flex-shrink-0">
+              <Home size={20} class="sm:w-7 sm:h-7 text-white" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <h1 class="text-xl sm:text-2xl md:text-3xl font-bold gradient-text truncate">{property.name}</h1>
+              <div class="flex items-center text-gray-900 dark:text-gray-300 mt-1 text-xs sm:text-sm" style="color: rgb(17, 24, 39) !important;">
+                <MapPin size={14} class="sm:w-4 sm:h-4 mr-1 flex-shrink-0" style="color: rgb(17, 24, 39) !important;" />
+                <span class="truncate" style="color: rgb(17, 24, 39) !important;">{property.address}</span>
+              </div>
             </div>
           </div>
+          {#if property.description}
+            <p class="text-gray-800 dark:text-gray-400 ml-0 sm:ml-14 text-xs sm:text-sm mt-2">{property.description}</p>
+          {/if}
         </div>
-        {#if property.description}
-          <p class="text-gray-600 dark:text-gray-400 ml-16 text-sm">{property.description}</p>
-        {/if}
-      </div>
-      
-      <div class="flex gap-2 flex-shrink-0">
-        {#if canEdit()}
-          <Button variant="secondary" on:click={() => showEditModal = true} className="text-sm">
-            <Settings size={18} class="inline mr-1.5" />
-            <span class="hidden sm:inline">Editar</span>
-          </Button>
-        {/if}
-        {#if canInvite()}
-          <Button variant="secondary" on:click={() => showUserAccess = !showUserAccess} className="text-sm">
-            <UserPlus size={18} class="inline mr-1.5" />
-            <span class="hidden sm:inline">Usuarios</span>
-          </Button>
-        {/if}
+        
+        <div class="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+          {#if canEdit()}
+            <Button variant="secondary" on:click={() => showEditModal = true} className="text-xs sm:text-sm flex-1 sm:flex-initial">
+              <Settings size={16} class="sm:w-[18px] sm:h-[18px] inline mr-1 sm:mr-1.5" />
+              <span class="hidden sm:inline">Editar</span>
+            </Button>
+          {/if}
+          {#if canInvite()}
+            <Button variant="secondary" on:click={() => showUserAccess = !showUserAccess} className="text-xs sm:text-sm flex-1 sm:flex-initial">
+              <UserPlus size={16} class="sm:w-[18px] sm:h-[18px] inline mr-1 sm:mr-1.5" />
+              <span class="hidden sm:inline">Usuarios</span>
+            </Button>
+          {/if}
+        </div>
       </div>
     </div>
     
@@ -181,68 +264,70 @@
     {/if}
     
     <!-- Stats Grid -->
-    <div class="grid grid-cols-4 gap-1 sm:gap-1.5 md:gap-2">
-      <GlassCard hover={false} className="p-0 rounded-xl sm:rounded-2xl">
-        <div class="flex flex-col items-center text-center p-1.5 sm:p-2">
-          <div class="p-1 sm:p-1.5 gradient-primary rounded-md sm:rounded-lg mb-1">
-            <DoorOpen size={10} class="text-white sm:w-3 sm:h-3" />
+    <div class="grid grid-cols-4 gap-1.5 sm:gap-2 md:gap-3">
+      <div class="bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-lg">
+        <div class="flex flex-col items-center text-center">
+          <div class="p-1 sm:p-1.5 bg-white/20 rounded-md sm:rounded-lg mb-1">
+            <DoorOpen size={12} class="sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
           </div>
-          <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Habs</p>
-          <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">
-            {rooms.length}
+          <p class="text-[10px] sm:text-xs md:text-sm lg:text-base text-white/90 font-medium leading-none mb-0.5">Habs</p>
+          <p class="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white leading-none">
+            {rooms.filter(r => r.room_type !== 'common').length}
           </p>
         </div>
-      </GlassCard>
+      </div>
       
-      <GlassCard hover={false} className="p-0 rounded-xl sm:rounded-2xl">
-        <div class="flex flex-col items-center text-center p-1.5 sm:p-2">
-          <div class="p-1 sm:p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-md sm:rounded-lg mb-1">
-            <Users size={10} class="text-white sm:w-3 sm:h-3" />
+      <div class="bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-lg">
+        <div class="flex flex-col items-center text-center">
+          <div class="p-1 sm:p-1.5 bg-white/20 rounded-md sm:rounded-lg mb-1">
+            <Users size={12} class="sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
           </div>
-          <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ocup</p>
-          <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">
-            {rooms.filter(r => r.occupied).length}
+          <p class="text-[10px] sm:text-xs md:text-sm lg:text-base text-white/90 font-medium leading-none mb-0.5">Ocup</p>
+          <p class="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white leading-none">
+            {rooms.filter(r => r.room_type !== 'common' && r.occupied).length}
           </p>
         </div>
-      </GlassCard>
+      </div>
       
-      <GlassCard hover={false} className="p-0 rounded-xl sm:rounded-2xl">
-        <div class="flex flex-col items-center text-center p-1.5 sm:p-2">
-          <div class="p-1 sm:p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-md sm:rounded-lg mb-1">
-            <TrendingUp size={10} class="text-white sm:w-3 sm:h-3" />
+      <div class="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-lg">
+        <div class="flex flex-col items-center text-center">
+          <div class="p-1 sm:p-1.5 bg-white/20 rounded-md sm:rounded-lg mb-1">
+            <TrendingUp size={12} class="sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
           </div>
-          <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">%</p>
-          <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-none">
-            {rooms.length > 0 
-              ? Math.round((rooms.filter(r => r.occupied).length / rooms.length) * 100)
-              : 0}%
+          <p class="text-[10px] sm:text-xs md:text-sm lg:text-base text-white/90 font-medium leading-none mb-0.5">%</p>
+          <p class="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white leading-none">
+            {(() => {
+              const privateRooms = rooms.filter(r => r.room_type !== 'common');
+              const occupiedPrivateRooms = privateRooms.filter(r => r.occupied).length;
+              return privateRooms.length > 0 ? Math.round((occupiedPrivateRooms / privateRooms.length) * 100) : 0;
+            })()}%
           </p>
         </div>
-      </GlassCard>
+      </div>
       
-      <GlassCard hover={false} className="p-0 rounded-xl sm:rounded-2xl">
-        <div class="flex flex-col items-center text-center p-1.5 sm:p-2">
-          <div class="p-1 sm:p-1.5 bg-gradient-to-br from-pink-500 to-rose-500 rounded-md sm:rounded-lg mb-1">
-            <Euro size={10} class="text-white sm:w-3 sm:h-3" />
+      <div class="bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-lg">
+        <div class="flex flex-col items-center text-center">
+          <div class="p-1 sm:p-1.5 bg-white/20 rounded-md sm:rounded-lg mb-1">
+            <Euro size={12} class="sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
           </div>
-          <p class="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 font-medium leading-none mb-0.5">Ing</p>
-          <p class="text-base sm:text-lg md:text-xl font-bold gradient-text leading-tight">
+          <p class="text-[10px] sm:text-xs md:text-sm lg:text-base text-white/90 font-medium leading-none mb-0.5">Ing</p>
+          <p class="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white leading-tight">
             {calculateMonthlyRevenue()}€
           </p>
         </div>
-      </GlassCard>
+      </div>
     </div>
     
     <!-- SECCIÓN: HABITACIONES -->
     <div>
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <DoorOpen size={24} />
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+        <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-200 flex items-center gap-2">
+          <DoorOpen size={20} class="sm:w-6 sm:h-6" />
           Habitaciones
         </h2>
         {#if canEdit()}
-          <Button on:click={() => { selectedRoom = null; showRoomModal = true; }} className="text-sm">
-            <Plus size={18} class="inline mr-1.5" />
+          <Button on:click={() => { selectedRoom = null; showRoomModal = true; }} className="text-xs sm:text-sm w-full sm:w-auto">
+            <Plus size={16} class="sm:w-[18px] sm:h-[18px] inline mr-1 sm:mr-1.5" />
             Nueva Habitación
           </Button>
         {/if}
@@ -251,6 +336,7 @@
       {#if rooms.length > 0}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {#each rooms as room (room.id)}
+            <!-- Se muestran todas las habitaciones (incluyendo salas comunes) pero no se cuentan en las estadísticas -->
             <RoomCard 
               {room} 
               {propertyId}
@@ -264,10 +350,10 @@
         <GlassCard>
           <div class="text-center py-12">
             <DoorOpen size={48} class="mx-auto text-gray-400 mb-4" />
-            <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-300 mb-2">
               No hay habitaciones aún
             </h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6 text-sm">
+            <p class="text-gray-800 dark:text-gray-400 mb-6 text-sm">
               Comienza agregando habitaciones a esta propiedad
             </p>
             {#if canEdit()}
@@ -282,14 +368,14 @@
     
     <!-- SECCIÓN: INQUILINOS -->
     <div>
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          <Users size={24} />
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+        <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-200 flex items-center gap-2">
+          <Users size={20} class="sm:w-6 sm:h-6" />
           Inquilinos
         </h2>
         {#if canEdit()}
-          <Button on:click={() => { selectedTenant = null; showTenantModal = true; }} className="text-sm">
-            <Plus size={18} class="inline mr-1.5" />
+          <Button on:click={() => { selectedTenant = null; showTenantModal = true; }} className="text-xs sm:text-sm w-full sm:w-auto">
+            <Plus size={16} class="sm:w-[18px] sm:h-[18px] inline mr-1 sm:mr-1.5" />
             Nuevo Inquilino
           </Button>
         {/if}
@@ -298,17 +384,32 @@
       {#if tenants.length > 0}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           {#each tenants as tenant (tenant.id)}
-            <TenantCard {tenant} />
+            {@const tenantRoom = rooms.find(r => r.tenant_id === tenant.id)}
+            <TenantCard 
+              {tenant} 
+              {property}
+              room={tenantRoom}
+              propertyId={propertyId}
+              on:generate-contract={(e) => {
+                contractTenant = e.detail.tenant;
+                contractRoom = e.detail.room || tenantRoom;
+                showContractModal = true;
+              }}
+              on:edit={(e) => {
+                selectedTenantForEdit = e.detail.tenant;
+                showEditTenantModal = true;
+              }}
+            />
           {/each}
         </div>
       {:else}
         <GlassCard>
           <div class="text-center py-12">
             <Users size={48} class="mx-auto text-gray-400 mb-4" />
-            <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-300 mb-2">
               No hay inquilinos aún
             </h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6 text-sm">
+            <p class="text-gray-800 dark:text-gray-400 mb-6 text-sm">
               Agrega inquilinos para gestionar tus contratos
             </p>
             {#if canEdit()}
@@ -329,19 +430,118 @@
             <Receipt size={24} />
             Gastos e Ingresos
           </h2>
+          <div class="flex gap-2">
+            <Button 
+              variant="secondary" 
+              on:click={() => { selectedExpense = null; showExpenseModal = true; }} 
+              className="text-sm"
+            >
+              <Plus size={18} class="inline mr-1.5" />
+              Gasto
+            </Button>
+            <Button 
+              on:click={() => { selectedIncome = null; showIncomeModal = true; }} 
+              className="text-sm"
+            >
+              <Plus size={18} class="inline mr-1.5" />
+              Ingreso
+            </Button>
+          </div>
         </div>
         
-        <GlassCard>
-          <div class="p-6 text-center">
-            <Receipt size={48} class="mx-auto text-gray-400 mb-4" />
-            <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">
-              Gestión financiera
-            </h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6 text-sm">
-              Próximamente: Podrás gestionar gastos e ingresos desde aquí
-            </p>
-          </div>
-        </GlassCard>
+        <!-- Resumen financiero -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
+          <GlassCard hover={false}>
+            <div class="text-center">
+              <p class="text-sm text-gray-900 dark:text-gray-400 mb-1">Total Ingresos</p>
+              <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+                {income.reduce((sum, i) => sum + parseFloat(i.amount || 0), 0).toFixed(2)}€
+              </p>
+              <p class="text-xs text-gray-500 mt-1">
+                {income.filter(i => i.paid).length}/{income.length} pagados
+              </p>
+            </div>
+          </GlassCard>
+          <GlassCard hover={false}>
+            <div class="text-center">
+              <p class="text-sm text-gray-900 dark:text-gray-400 mb-1">Total Gastos</p>
+              <p class="text-2xl font-bold text-red-600 dark:text-red-400">
+                {expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0).toFixed(2)}€
+              </p>
+              <p class="text-xs text-gray-500 mt-1">
+                {expenses.length} registros
+              </p>
+            </div>
+          </GlassCard>
+          <GlassCard hover={false}>
+            <div class="text-center">
+              <p class="text-sm text-gray-900 dark:text-gray-400 mb-1">Balance</p>
+              <p class="text-2xl font-bold {income.reduce((sum, i) => sum + parseFloat(i.amount || 0), 0) - expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                {(income.reduce((sum, i) => sum + parseFloat(i.amount || 0), 0) - expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0)).toFixed(2)}€
+              </p>
+              <p class="text-xs text-gray-500 mt-1">
+                Ingresos - Gastos
+              </p>
+            </div>
+          </GlassCard>
+        </div>
+        
+        <!-- Ingresos -->
+        <div class="mb-6">
+          <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+            <TrendingUp size={20} />
+            Ingresos ({income.length})
+          </h3>
+          {#if income.length > 0}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              {#each income as item (item.id)}
+                <IncomeCard 
+                  income={item}
+                  onEdit={(item) => { selectedIncome = item; showIncomeModal = true; }}
+                  onDelete={handleDeleteIncome}
+                  onTogglePaid={handleTogglePaid}
+                />
+              {/each}
+            </div>
+          {:else}
+            <GlassCard>
+              <div class="text-center py-8">
+                <TrendingUp size={48} class="mx-auto text-gray-400 mb-4" />
+                <p class="text-gray-800 dark:text-gray-400 text-sm">
+                  No hay ingresos registrados aún
+                </p>
+              </div>
+            </GlassCard>
+          {/if}
+        </div>
+        
+        <!-- Gastos -->
+        <div>
+          <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+            <Receipt size={20} />
+            Gastos ({expenses.length})
+          </h3>
+          {#if expenses.length > 0}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              {#each expenses as expense (expense.id)}
+                <ExpenseCard 
+                  {expense}
+                  onEdit={(expense) => { selectedExpense = expense; showExpenseModal = true; }}
+                  onDelete={handleDeleteExpense}
+                />
+              {/each}
+            </div>
+          {:else}
+            <GlassCard>
+              <div class="text-center py-8">
+                <Receipt size={48} class="mx-auto text-gray-400 mb-4" />
+                <p class="text-gray-800 dark:text-gray-400 text-sm">
+                  No hay gastos registrados aún
+                </p>
+              </div>
+            </GlassCard>
+          {/if}
+        </div>
       </div>
     {/if}
   </div>
@@ -372,4 +572,42 @@
       on:cancel={() => { showTenantModal = false; selectedTenant = null; }}
     />
   </Modal>
+  
+  <Modal bind:open={showExpenseModal} title={selectedExpense ? 'Editar Gasto' : 'Nuevo Gasto'} size="lg">
+    <ExpenseForm 
+      {propertyId}
+      expense={selectedExpense}
+      on:success={handleExpenseSuccess}
+      on:cancel={() => { showExpenseModal = false; selectedExpense = null; }}
+    />
+  </Modal>
+  
+  <Modal bind:open={showIncomeModal} title={selectedIncome ? 'Editar Ingreso' : 'Nuevo Ingreso'} size="lg">
+    <IncomeForm 
+      {propertyId}
+      income={selectedIncome}
+      on:success={handleIncomeSuccess}
+      on:cancel={() => { showIncomeModal = false; selectedIncome = null; }}
+    />
+  </Modal>
+  
+  <!-- Modal Generar Contrato -->
+  <GenerateContractModal 
+    bind:open={showContractModal}
+    tenant={contractTenant}
+    {property}
+    room={contractRoom}
+  />
+  
+  <!-- Modal Editar Inquilino -->
+  <EditTenantModal
+    bind:open={showEditTenantModal}
+    tenant={selectedTenantForEdit}
+    {propertyId}
+    on:success={() => {
+      showEditTenantModal = false;
+      selectedTenantForEdit = null;
+      loadAllData();
+    }}
+  />
 {/if}

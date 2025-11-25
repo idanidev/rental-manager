@@ -27,13 +27,7 @@
   
   onMount(async () => {
     try {
-      const { propertiesStore } = await import('$lib/stores/properties');
-      const props = await new Promise(resolve => {
-        const unsubscribe = propertiesStore.subscribe(value => {
-          resolve(value);
-          unsubscribe();
-        });
-      });
+      // Cargar habitaciones directamente sin necesidad de esperar al store
       rooms = await roomsService.getPropertyRooms(propertyId);
       
       // Si solo hay una habitación, seleccionarla automáticamente

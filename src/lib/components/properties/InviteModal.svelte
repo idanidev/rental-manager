@@ -29,6 +29,7 @@
     error = '';
 
     try {
+      console.log('📧 Invitando usuario:', { propertyId, email, role, userId: $userStore.id });
       result = await permissionsService.inviteUser(
         propertyId,
         email,
@@ -36,9 +37,14 @@
         $userStore.id
       );
       
+      console.log('✅ Invitación exitosa:', result);
       success = true;
     } catch (err) {
-      error = err.message || 'Error al enviar la invitación';
+      console.error('❌ Error al invitar:', err);
+      error = err.message || err.details || err.hint || 'Error al enviar la invitación';
+      if (err.code) {
+        error += ` (Código: ${err.code})`;
+      }
     } finally {
       loading = false;
     }
@@ -134,7 +140,7 @@
           <p class="text-sm">{email} recibirá acceso automáticamente cuando se registre en la aplicación.</p>
         </div>
         
-        <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+        <div class="bg-white/60 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
           <p class="text-sm text-gray-700">
             <strong>💡 Consejo:</strong> Comparte este enlace con {email} para que pueda registrarse:
           </p>

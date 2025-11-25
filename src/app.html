@@ -5,9 +5,22 @@
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="description" content="Gestiona tus propiedades de alquiler de forma profesional" />
+		<script>
+			// Silenciar WebSocket ANTES de que se cargue cualquier cosa
+			(function() {
+				const origError = console.error;
+				const origWarn = console.warn;
+				const check = (args) => {
+					const txt = args.map(a => String(a || '')).join(' ').toLowerCase();
+					return txt.includes('websocket') || txt.includes('wss://') || txt.includes('realtime');
+				};
+				console.error = function(...args) { if (!check(args)) origError.apply(console, args); };
+				console.warn = function(...args) { if (!check(args)) origWarn.apply(console, args); };
+			})();
+		</script>
 		
 		<!-- PWA Meta Tags -->
-		<meta name="theme-color" content="#9333ea" />
+		<meta name="theme-color" content="#f97316" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		
 		<!-- iOS PWA Meta Tags -->

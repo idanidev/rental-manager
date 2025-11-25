@@ -20,8 +20,8 @@ function createPropertiesStore() {
         const properties = await propertiesService.getUserProperties(userId);
         set(properties);
         
-        // Suscribirse a cambios en tiempo real
-        this.subscribeToRealtimeUpdates(userId);
+        // DESHABILITADO: Suscripciones Realtime causan llamadas automáticas
+        // this.subscribeToRealtimeUpdates(userId);
       } catch (error) {
         console.error('Error loading properties:', error);
         set([]);

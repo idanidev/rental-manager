@@ -44,6 +44,18 @@ export const permissionsService = {
 
   // Verificar si un usuario tiene permiso en una propiedad
   async checkPermission(propertyId, userId) {
+    // Primero verificar si es el owner_id directo de la propiedad
+    const { data: property, error: propError } = await supabase
+      .from('properties')
+      .select('owner_id')
+      .eq('id', propertyId)
+      .single();
+    
+    if (!propError && property && property.owner_id === userId) {
+      return 'owner';
+    }
+    
+    // Si no es owner directo, verificar en property_access
     const { data, error } = await supabase
       .from('property_access')
       .select('role')
@@ -113,6 +125,8 @@ export const permissionsService = {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30); // 30 días de validez
 
+    console.log('📝 Creando invitación pendiente:', { propertyId, email: email.toLowerCase(), role, token, expiresAt: expiresAt.toISOString(), created_by: invitedBy });
+
     const { data, error } = await supabase
       .from('invitations')
       .insert({
@@ -126,7 +140,17 @@ export const permissionsService = {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error al crear invitación:', error);
+      // Proporcionar mensaje de error más descriptivo
+      if (error.code === '42501') {
+        throw new Error('No tienes permisos para invitar usuarios a esta propiedad. Solo los propietarios pueden invitar.');
+      } else if (error.code === '23505') {
+        throw new Error('Ya existe una invitación pendiente para este email en esta propiedad.');
+      } else {
+        throw new Error(error.message || `Error al crear invitación: ${error.code || 'Desconocido'}`);
+      }
+    }
     
     return {
       type: 'pending',

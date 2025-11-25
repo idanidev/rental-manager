@@ -160,3 +160,106 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// =====================================================
+// PUSH NOTIFICATIONS
+// =====================================================
+
+// Escuchar notificaciones push
+self.addEventListener('push', (event) => {
+  console.log('[SW] Push notification recibida:', event);
+  
+  let notificationData = {
+    title: 'Rental Manager',
+    body: 'Tienes una nueva notificación',
+    icon: '/icon-192.png',
+    badge: '/icon-180.png',
+    tag: 'rental-manager-notification',
+    requireInteraction: false,
+    data: {}
+  };
+
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      notificationData = {
+        title: data.title || notificationData.title,
+        body: data.body || notificationData.body,
+        icon: data.icon || notificationData.icon,
+        badge: data.badge || notificationData.badge,
+        tag: data.tag || notificationData.tag,
+        requireInteraction: data.requireInteraction || false,
+        data: data.data || {},
+        actions: data.actions || []
+      };
+    } catch (e) {
+      console.error('[SW] Error parsing push data:', e);
+      notificationData.body = event.data.text() || notificationData.body;
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      tag: notificationData.tag,
+      requireInteraction: notificationData.requireInteraction,
+      data: notificationData.data,
+      actions: notificationData.actions || [
+        {
+          action: 'view',
+          title: 'Ver',
+          icon: '/icon-180.png'
+        },
+        {
+          action: 'dismiss',
+          title: 'Descartar'
+        }
+      ],
+      vibrate: [200, 100, 200],
+      timestamp: Date.now()
+    })
+  );
+});
+
+// Manejar clics en notificaciones
+self.addEventListener('notificationclick', (event) => {
+  console.log('[SW] Click en notificación:', event);
+  
+  event.notification.close();
+
+  const notificationData = event.notification.data || {};
+  let urlToOpen = '/';
+
+  // Determinar URL según el tipo de notificación
+  if (notificationData.url) {
+    urlToOpen = notificationData.url;
+  } else if (notificationData.type === 'contract_expiring' || notificationData.type === 'contract_expired') {
+    urlToOpen = notificationData.propertyId ? `/properties/${notificationData.propertyId}` : '/notifications';
+  } else if (notificationData.type === 'invoice_pending') {
+    urlToOpen = notificationData.propertyId ? `/properties/${notificationData.propertyId}` : '/';
+  }
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Si ya hay una ventana abierta, enfocarla
+        for (const client of clientList) {
+          if (client.url.includes(urlToOpen) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Si no, abrir una nueva ventana
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});
+
+// Manejar acciones de notificaciones
+self.addEventListener('notificationclose', (event) => {
+  console.log('[SW] Notificación cerrada:', event);
+});
+
+

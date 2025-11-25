@@ -169,14 +169,14 @@
               class="w-full text-left p-4 rounded-2xl border-2 transition-all duration-300
                 {selectedRoomId === room.id 
                   ? 'border-orange-500 bg-gradient-to-r from-orange-50/50 to-pink-50/50 shadow-md' 
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'}"
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-white/60 dark:hover:bg-gray-800'}"
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="p-2.5 rounded-xl transition-all
                     {selectedRoomId === room.id 
                       ? 'bg-orange-500' 
-                      : 'bg-gray-100'}">
+                      : 'bg-white/60 dark:bg-gray-700'}">
                     <DoorOpen size={20} class="{selectedRoomId === room.id ? 'text-white' : 'text-gray-600'}" />
                   </div>
                   <div>
@@ -204,8 +204,8 @@
           {/each}
         </div>
       {:else}
-        <div class="text-center py-10 bg-gray-50/50 rounded-2xl border border-gray-200/50">
-          <div class="inline-flex p-3 bg-gray-100 rounded-full mb-3">
+        <div class="text-center py-10 bg-white/60 dark:bg-gray-800 rounded-2xl border border-gray-200/50 dark:border-gray-700/50">
+          <div class="inline-flex p-3 bg-white/80 dark:bg-gray-700 rounded-full mb-3">
             <AlertCircle size={28} class="text-gray-400" />
           </div>
           <p class="text-sm font-semibold text-gray-700 mb-1">No hay habitaciones disponibles</p>

@@ -17,42 +17,41 @@
   let loading = false;
   let error = '';
   let availableTenants = [];
-  let selectedTenant = null;
   let showCreateNew = false;
-  let showEditForm = false;
   
-  onMount(async () => {
-    await loadAvailableTenants();
-  });
+  // Recargar inquilinos cuando se abre el modal
+  $: if (open) {
+    loadAvailableTenants();
+  }
   
   async function loadAvailableTenants() {
     try {
-      availableTenants = await tenantsService.getActiveTenants(propertyId);
+      // Usar getAvailableTenants que incluye inactivos sin habitación
+      availableTenants = await tenantsService.getAvailableTenants(propertyId);
     } catch (err) {
       console.error('Error loading tenants:', err);
+      availableTenants = [];
     }
   }
   
-  function handleTenantSelect(tenant) {
-    selectedTenant = tenant;
-    showEditForm = true;
-  }
-  
-  async function handleConfirmAssign() {
-    if (!selectedTenant) {
-      error = 'Por favor selecciona un inquilino';
-      return;
-    }
-    
+  async function handleTenantSelect(tenant) {
+    // Asignar directamente sin pasos intermedios
     loading = true;
     error = '';
     
     try {
+      // Si el inquilino está inactivo, reactivarlo automáticamente
+      if (!tenant.active) {
+        await tenantsService.activateTenant(tenant.id);
+      }
+      
+      // Asignar inquilino a la habitación
       await roomsService.updateRoom(room.id, {
-        tenant_id: selectedTenant.id,
+        tenant_id: tenant.id,
         occupied: true
       });
       
+      // Cerrar modal y notificar éxito
       dispatch('success');
       open = false;
       resetState();
@@ -63,19 +62,17 @@
     }
   }
   
-  function handleTenantUpdate(event) {
-    selectedTenant = event.detail.tenant;
-  }
   
   function resetState() {
-    selectedTenant = null;
     showCreateNew = false;
-    showEditForm = false;
     error = '';
+    loading = false;
   }
   
   async function handleCreateAndAssign(event) {
     const newTenant = event.detail.tenant;
+    loading = true;
+    error = '';
     
     try {
       await roomsService.updateRoom(room.id, {
@@ -83,10 +80,14 @@
         occupied: true
       });
       
+      // Cerrar modal y notificar éxito
       dispatch('success');
       open = false;
+      resetState();
     } catch (err) {
       error = err.message || 'Error al asignar inquilino';
+    } finally {
+      loading = false;
     }
   }
   
@@ -96,10 +97,7 @@
   }
   
   function goBack() {
-    if (showEditForm) {
-      showEditForm = false;
-      selectedTenant = null;
-    } else if (showCreateNew) {
+    if (showCreateNew) {
       showCreateNew = false;
     }
   }
@@ -113,14 +111,15 @@
       </div>
     {/if}
     
-    {#if !showCreateNew && !showEditForm}
-      <!-- Lista de inquilinos -->
+    {#if !showCreateNew}
+      <!-- Lista de inquilinos - Asignación directa -->
       <div class="space-y-3">
         <div class="flex items-center justify-between">
           <h3 class="font-semibold text-gray-900">Seleccionar Inquilino</h3>
           <button
             on:click={() => showCreateNew = true}
             class="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1"
+            disabled={loading}
           >
             <UserPlus size={14} />
             Crear Nuevo
@@ -132,77 +131,51 @@
             {#each availableTenants as tenant (tenant.id)}
               <button
                 on:click={() => handleTenantSelect(tenant)}
-                class="w-full p-4 rounded-lg border-2 border-gray-200 hover:border-orange-300 hover:bg-orange-50/30 transition-all text-left flex items-center justify-between"
+                disabled={loading}
+                class="w-full p-4 rounded-lg border-2 {tenant.active ? 'border-gray-200 hover:border-orange-300' : 'border-yellow-300 bg-yellow-50/50 hover:border-orange-400'} hover:bg-orange-50/30 transition-all text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div class="flex items-center gap-3 flex-1">
-                  <div class="p-2 gradient-primary rounded-lg flex-shrink-0">
+                  <div class="p-2 {tenant.active ? 'gradient-primary' : 'bg-yellow-500'} rounded-lg flex-shrink-0">
                     <Users size={20} class="text-white" />
                   </div>
                   <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-gray-800 truncate">{tenant.full_name}</h4>
-              {#if tenant.email}
-                <p class="text-sm text-gray-600 truncate">{tenant.email}</p>
-              {/if}
-            </div>
+                    <div class="flex items-center gap-2">
+                      <h4 class="font-bold text-gray-800 truncate">{tenant.full_name}</h4>
+                      {#if !tenant.active}
+                        <span class="px-2 py-0.5 bg-yellow-200 text-yellow-800 text-xs font-semibold rounded-full">
+                          Inactivo
+                        </span>
+                      {/if}
+                    </div>
+                    {#if tenant.email}
+                      <p class="text-sm text-gray-600 truncate">{tenant.email}</p>
+                    {/if}
+                    {#if !tenant.active}
+                      <p class="text-xs text-yellow-700 mt-1">Se reactivará al asignar</p>
+                    {/if}
+                  </div>
                 </div>
-                <ArrowRight size={20} class="text-gray-400 flex-shrink-0 ml-2" />
+                {#if loading}
+                  <div class="animate-spin rounded-full h-5 w-5 border-2 border-orange-500 border-t-transparent flex-shrink-0"></div>
+                {:else}
+                  <ArrowRight size={20} class="text-gray-400 flex-shrink-0 ml-2" />
+                {/if}
               </button>
             {/each}
           </div>
         {:else}
-          <div class="text-center py-8 bg-gray-50 rounded-xl">
+          <div class="text-center py-8 bg-white/60 dark:bg-gray-800 rounded-xl">
             <Users size={32} class="mx-auto text-gray-400 mb-2" />
             <p class="text-sm text-gray-600 mb-3">No hay inquilinos disponibles</p>
-            <Button on:click={() => showCreateNew = true} variant="secondary">
+            <Button on:click={() => showCreateNew = true} variant="secondary" disabled={loading}>
               + Crear Nuevo Inquilino
             </Button>
           </div>
         {/if}
         
-        <Button variant="secondary" on:click={cancel} className="w-full">
+        <Button variant="secondary" on:click={cancel} className="w-full" disabled={loading}>
           Cancelar
         </Button>
-      </div>
-    {:else if showEditForm && selectedTenant}
-      <!-- Editar y confirmar -->
-      <div class="space-y-4">
-        <button
-          on:click={goBack}
-          class="text-sm text-gray-600 hover:text-gray-700"
-        >
-          ← Volver a la lista
-        </button>
-        
-        <div class="bg-orange-50 border border-orange-200 rounded-xl p-4">
-          <p class="text-sm text-orange-800">
-            <strong>Asignar a:</strong> {room.name}
-          </p>
-        </div>
-        
-        <TenantForm
-          {propertyId}
-          tenant={selectedTenant}
-          roomMonthlyRent={room.monthly_rent}
-          on:success={handleTenantUpdate}
-          on:cancel={goBack}
-        />
-        
-        <div class="flex gap-3 pt-2 border-t">
-          <Button 
-            on:click={handleConfirmAssign} 
-            disabled={loading}
-            className="flex-1"
-          >
-            {#if loading}
-              <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2 inline-block"></div>
-            {/if}
-            <UserPlus size={18} class="inline mr-2" />
-            Confirmar Asignación
-          </Button>
-          <Button variant="secondary" on:click={goBack}>
-            Cancelar
-          </Button>
-        </div>
       </div>
     {:else if showCreateNew}
       <!-- Crear inquilino nuevo -->
@@ -210,6 +183,7 @@
         <button
           on:click={goBack}
           class="text-sm text-gray-600 hover:text-gray-700 mb-4"
+          disabled={loading}
         >
           ← Volver a la lista
         </button>

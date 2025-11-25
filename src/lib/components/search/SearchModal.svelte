@@ -177,7 +177,7 @@
         {/if}
         <button
           on:click={close}
-          class="p-1 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+          class="p-1 hover:bg-white/80 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
           aria-label="Cerrar"
         >
           <X size={18} class="text-gray-500" />

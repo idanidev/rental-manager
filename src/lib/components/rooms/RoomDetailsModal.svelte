@@ -176,7 +176,7 @@
               {#if room.contract_notes}
                 <div class="md:col-span-2">
                   <p class="text-sm text-gray-600 mb-2">Notas del contrato</p>
-                  <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="bg-white/60 dark:bg-gray-800 rounded-lg p-3">
                     <p class="text-gray-800 text-sm whitespace-pre-wrap">{room.contract_notes}</p>
                   </div>
                 </div>
@@ -198,7 +198,7 @@
             
             <div class="space-y-2">
               {#each room.inventory as item}
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between p-3 bg-white/60 dark:bg-gray-800 rounded-lg">
                   <div class="flex-1">
                     <p class="font-semibold text-gray-800">
                       {item.name}

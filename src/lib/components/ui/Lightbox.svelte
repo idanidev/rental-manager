@@ -14,7 +14,10 @@
   $: canGoNext = currentIndex < images.length - 1;
   
   function close() {
-    open = false;
+    // Asegurar que no cause navegación
+    if (typeof window !== 'undefined' && open) {
+      open = false;
+    }
   }
   
   function prev() {
@@ -46,7 +49,16 @@
 {#if open && currentImage}
   <div 
     class="fixed inset-0 bg-black/95 z-[99999] flex items-center justify-center p-4"
-    on:click={close}
+    on:click|stopPropagation={close}
+    on:keydown|stopPropagation={(e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        close();
+      }
+    }}
+    role="dialog"
+    aria-modal="true"
+    aria-label="Visor de imagen"
     transition:fly={{ y: 20, duration: 200 }}
   >
     <!-- Close Button -->

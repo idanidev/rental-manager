@@ -88,3 +88,6 @@ FROM pg_policies
 WHERE tablename = 'property_access'
 ORDER BY policyname;
 
+
+
+

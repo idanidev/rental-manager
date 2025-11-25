@@ -36,7 +36,7 @@
         <p class="text-sm font-medium text-gray-800 flex-1">{item.message}</p>
         <button
           on:click={() => removeToast(item.id)}
-          class="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+          class="p-1 hover:bg-white/80 dark:hover:bg-gray-800 rounded-lg transition-colors"
         >
           <X size={16} class="text-gray-500" />
         </button>

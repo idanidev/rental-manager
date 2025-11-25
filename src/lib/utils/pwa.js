@@ -89,7 +89,7 @@ export function showInstallPrompt() {
         <p class="text-sm text-gray-600 dark:text-gray-400">Instala la app para acceso rápido y uso offline</p>
       </div>
       <div class="flex gap-2">
-        <button id="pwa-install-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors">
+        <button id="pwa-install-btn" class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition-colors">
           Instalar
         </button>
         <button id="pwa-dismiss-btn" class="px-4 py-2 text-gray-600 dark:text-gray-400 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">

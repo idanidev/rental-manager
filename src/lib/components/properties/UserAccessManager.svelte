@@ -120,7 +120,13 @@
     </div>
     
     {#if isOwner}
-      <Button on:click={() => showInviteModal = true} className="text-sm">
+      <Button 
+        on:click={() => {
+          console.log('🔘 Botón Invitar Usuario clickeado');
+          showInviteModal = true;
+        }} 
+        className="text-sm"
+      >
         <UserPlus size={18} class="mr-1" />
         Invitar Usuario
       </Button>
@@ -193,13 +199,11 @@
 </div>
 
 <!-- Modal de Invitación -->
-{#if showInviteModal}
-  <InviteModal
-    {propertyId}
-    on:close={() => showInviteModal = false}
-    on:success={handleInviteSuccess}
-  />
-{/if}
+<InviteModal
+  bind:open={showInviteModal}
+  {propertyId}
+  on:success={handleInviteSuccess}
+/>
 
 <!-- Confirmación de eliminación -->
 <ConfirmDialog

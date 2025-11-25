@@ -6,7 +6,8 @@
   import { userStore } from '$lib/stores/user';
   import { propertiesStore } from '$lib/stores/properties';
   import { authService } from '$lib/services/auth';
-  import { LogOut, Menu, X, Moon, Sun, User, Settings } from 'lucide-svelte';
+  import { supabase } from '$lib/services/supabase';
+  import { LogOut, Menu, Moon, Sun, User, Settings } from 'lucide-svelte';
   import Toast from '$lib/components/ui/Toast.svelte';
   import { theme } from '$lib/stores/theme';
   import { permissionsService } from '$lib/services/permissions';
@@ -31,8 +32,10 @@
     }
   }
   
-  // Reaccionar a cambios en userStore
-  $: if ($userStore && !propertiesLoaded && typeof window !== 'undefined') {
+  // Reaccionar a cambios en userStore (solo si no estamos en proceso de logout)
+  let isLoggingOut = false;
+  
+  $: if ($userStore && !propertiesLoaded && !isLoggingOut && typeof window !== 'undefined') {
     (async () => {
       try {
         // Procesar invitaciones pendientes primero
@@ -92,17 +95,7 @@
     }
   });
 
-  async function handleLogout() {
-    try {
-      await authService.signOut();
-      userStore.clear();
-      propertiesStore.clear();
-      propertiesLoaded = false;
-      goto('/login');
-    } catch (err) {
-      console.error('Error al cerrar sesión:', err);
-    }
-  }
+  // Función eliminada - ahora se hace directamente en el botón
 
   function toggleUserMenu() {
     userMenuOpen = !userMenuOpen;
@@ -112,12 +105,109 @@
     userMenuOpen = false;
   }
   
+  // Función de logout
+  async function handleLogout(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+    
+    // Marcar que estamos cerrando sesión
+    isLoggingOut = true;
+    userMenuOpen = false;
+    
+    try {
+      // Limpiar stores de forma segura
+      try {
+        if (userStore && typeof userStore.clear === 'function') {
+          userStore.clear();
+        }
+      } catch (err) {
+        console.warn('Error al limpiar userStore:', err);
+      }
+      
+      try {
+        if (propertiesStore && typeof propertiesStore.clear === 'function') {
+          propertiesStore.clear();
+        }
+      } catch (err) {
+        console.warn('Error al limpiar propertiesStore:', err);
+      }
+      
+      propertiesLoaded = true;
+      
+      // Cerrar sesión en Supabase
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('Error al cerrar sesión en Supabase:', err);
+      }
+    } catch (err) {
+      console.error('Error durante el logout:', err);
+    }
+    
+    // Redirigir inmediatamente
+    window.location.replace('/login');
+  }
+  
   // Cerrar menú cuando cambia la ruta
   $: if ($page.url.pathname) {
     userMenuOpen = false;
   }
   
+  // Cerrar menú al hacer click fuera
+  let menuContainer;
+  let menuDropdown;
+  let cleanupClickListener = null;
+  
+  $: if (userMenuOpen && typeof window !== 'undefined') {
+    // Limpiar listener anterior si existe
+    if (cleanupClickListener) {
+      cleanupClickListener();
+      cleanupClickListener = null;
+    }
+    
+    // Agregar nuevo listener - usar capture phase para capturar todos los clics
+    const handleClickOutside = (e) => {
+      const target = e.target;
+      if (!target) return;
+      
+      // Verificar si el clic está dentro del contenedor del menú o del dropdown
+      const clickedInsideButton = menuContainer?.contains(target);
+      const clickedInsideDropdown = menuDropdown?.contains(target);
+      
+      if (!clickedInsideButton && !clickedInsideDropdown) {
+        closeUserMenu();
+      }
+    };
+    
+    // Usar setTimeout para que el click actual termine primero
+    setTimeout(() => {
+      // Usar capture phase para capturar clics antes de que lleguen a otros elementos
+      document.addEventListener('mousedown', handleClickOutside, true);
+      document.addEventListener('touchstart', handleClickOutside, true);
+      cleanupClickListener = () => {
+        document.removeEventListener('mousedown', handleClickOutside, true);
+        document.removeEventListener('touchstart', handleClickOutside, true);
+      };
+    }, 10);
+  } else if (cleanupClickListener) {
+    cleanupClickListener();
+    cleanupClickListener = null;
+  }
+  
+  onDestroy(() => {
+    if (cleanupClickListener) {
+      cleanupClickListener();
+    }
+  });
+  
   $: isAuthPage = $page.url.pathname === '/login' || $page.url.pathname.startsWith('/accept-invitation');
+  
+  // Estilo del menú dropdown - completamente opaco
+  $: menuBackgroundColor = $theme === 'dark' ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)';
+  $: menuStyle = `z-index: 99999; background-color: ${menuBackgroundColor} !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; opacity: 1 !important;`;
 </script>
 
 {#if loading}
@@ -133,7 +223,7 @@
   <div class="min-h-screen">
     {#if $userStore && !isAuthPage}
       <!-- Navbar Simple -->
-      <nav class="glass-card m-2 sm:m-4 mb-2 relative z-50">
+      <nav class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl m-2 sm:m-4 mb-2 p-6 relative z-50 shadow-xl">
         <div class="flex items-center justify-between gap-4">
           <!-- Logo - siempre vuelve al dashboard -->
           <a href="/" class="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity">
@@ -142,64 +232,84 @@
           </a>
           
           <!-- User Menu -->
-          <div class="relative user-menu">
+          <div class="relative user-menu" bind:this={menuContainer} style="z-index: 10000;">
             <button
+              type="button"
               on:click|stopPropagation={toggleUserMenu}
-              class="flex items-center gap-2 px-3 py-2 rounded-2xl hover:bg-white/60 dark:hover:bg-gray-800/60 transition-all duration-300"
+              class="flex items-center gap-2 px-3 py-2 rounded-2xl hover:bg-white/60 dark:hover:bg-gray-800/60 transition-all duration-300 relative z-[101] focus:outline-none"
               aria-label="Menú de usuario"
               aria-expanded={userMenuOpen}
             >
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                 {$userStore?.user_metadata?.name?.[0]?.toUpperCase() || $userStore?.email?.[0]?.toUpperCase() || 'U'}
               </div>
-              {#if userMenuOpen}
-                <X size={16} class="text-gray-600 dark:text-gray-400" />
-              {:else}
-                <Menu size={16} class="text-gray-600 dark:text-gray-400" />
-              {/if}
+              <Menu 
+                size={16} 
+                class="text-gray-600 dark:text-gray-400 transition-transform {userMenuOpen ? 'rotate-90' : ''}" 
+              />
             </button>
+            
+            <!-- Overlay invisible para cerrar el menú al hacer clic fuera -->
+            {#if userMenuOpen}
+              <div 
+                class="fixed inset-0 z-[99998]"
+                on:click={closeUserMenu}
+                on:touchstart={closeUserMenu}
+                role="presentation"
+                aria-hidden="true"
+              ></div>
+            {/if}
             
             <!-- Dropdown Menu -->
             {#if userMenuOpen}
               <div 
-                class="absolute right-0 top-full mt-2 w-48 glass-card rounded-2xl shadow-xl p-2 z-[60] backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 animate-fade-in"
-                on:click|stopPropagation
+                bind:this={menuDropdown}
+                class="absolute right-0 top-full mt-2 w-56 rounded-2xl shadow-xl p-2 border border-gray-200 dark:border-gray-700 animate-fade-in z-[99999]"
+                style={menuStyle}
+                role="menu"
+                aria-label="Menú de usuario"
+                data-menu-opaque="true"
               >
-                <div class="px-3 py-2 border-b border-gray-200/50 dark:border-gray-700/50 mb-2">
-                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 mb-2">
+                  <p class="text-sm font-semibold" style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;">
                     {$userStore?.user_metadata?.name || 'Usuario'}
                   </p>
-                  <p class="text-xs text-gray-600 dark:text-gray-400 truncate">
+                  <p class="text-xs truncate" style="color: {$theme === 'dark' ? 'rgb(209, 213, 219)' : 'rgb(55, 65, 81)'} !important;">
                     {$userStore?.email}
                   </p>
                 </div>
                 
                 <button
                   on:click={() => { theme.toggle(); closeUserMenu(); }}
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors text-gray-700 dark:text-gray-300 text-sm"
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm"
+                  style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;"
                 >
                   {#if $theme === 'dark'}
-                    <Sun size={16} />
+                    <Sun size={16} style="color: rgb(243, 244, 246) !important;" />
                     <span>Modo claro</span>
                   {:else}
-                    <Moon size={16} />
+                    <Moon size={16} style="color: rgb(17, 24, 39) !important;" />
                     <span>Modo oscuro</span>
                   {/if}
                 </button>
                 
                 <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100/60 dark:hover:bg-gray-800/60 transition-colors text-gray-700 dark:text-gray-300 text-sm opacity-50 cursor-not-allowed"
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm opacity-50 cursor-not-allowed"
+                  style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;"
                   disabled
                 >
-                  <Settings size={16} />
+                  <Settings size={16} style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;" />
                   <span>Configuración</span>
                 </button>
                 
-                <div class="h-px bg-gray-200/50 dark:bg-gray-700/50 my-2"></div>
+                <div class="h-px bg-gray-200 dark:bg-gray-700 my-2"></div>
                 
                 <button
-                  on:click={() => { handleLogout(); closeUserMenu(); }}
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-600 dark:text-red-400 text-sm"
+                  type="button"
+                  on:click|stopPropagation={handleLogout}
+                  on:mousedown|stopPropagation
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm cursor-pointer"
+                  style="position: relative; z-index: 999999; color: {$theme === 'dark' ? 'rgb(248, 113, 113)' : 'rgb(220, 38, 38)'} !important;"
                 >
                   <LogOut size={16} />
                   <span>Cerrar sesión</span>
@@ -209,17 +319,6 @@
           </div>
         </div>
       </nav>
-      
-      <!-- Backdrop para cerrar menú (solo cuando está abierto) -->
-      {#if userMenuOpen}
-        <div 
-          class="fixed inset-0 z-[55]"
-          on:click={closeUserMenu}
-          role="button"
-          tabindex="-1"
-          aria-label="Cerrar menú"
-        ></div>
-      {/if}
     {/if}
 
     <!-- Main Content -->
