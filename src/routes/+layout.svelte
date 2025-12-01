@@ -223,7 +223,7 @@
   <div class="min-h-screen">
     {#if $userStore && !isAuthPage}
       <!-- Navbar Simple -->
-      <nav class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl m-2 sm:m-4 mb-2 p-6 relative z-50 shadow-xl">
+      <nav class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-3xl m-2 sm:m-4 mb-2 p-2 sm:p-3 relative z-50 shadow-xl">
         <div class="flex items-center justify-between gap-4">
           <!-- Logo - siempre vuelve al dashboard -->
           <a href="/" class="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity">

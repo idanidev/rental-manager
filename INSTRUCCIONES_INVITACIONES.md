@@ -58,3 +58,4 @@ Asegúrate de que:
 - Si el usuario no tiene cuenta, se crea una invitación pendiente que se procesará cuando se registre
 
 
+

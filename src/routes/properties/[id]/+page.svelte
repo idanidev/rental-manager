@@ -114,28 +114,56 @@
     loadAllData();
   }
   
-  function handleRoomSuccess() {
+  async function handleRoomSuccess() {
     showRoomModal = false;
     selectedRoom = null;
-    loadAllData();
+    // Solo recargar habitaciones, no todos los datos
+    try {
+      rooms = await roomsService.getPropertyRooms(propertyId);
+    } catch (err) {
+      console.error('Error reloading rooms:', err);
+      // Si falla, recargar todo como fallback
+      await loadAllData();
+    }
   }
   
-  function handleTenantSuccess() {
+  async function handleTenantSuccess() {
     showTenantModal = false;
     selectedTenant = null;
-    loadAllData();
+    // Solo recargar inquilinos, no todos los datos
+    try {
+      tenants = await tenantsService.getPropertyTenants(propertyId);
+    } catch (err) {
+      console.error('Error reloading tenants:', err);
+      // Si falla, recargar todo como fallback
+      await loadAllData();
+    }
   }
   
-  function handleExpenseSuccess() {
+  async function handleExpenseSuccess() {
     showExpenseModal = false;
     selectedExpense = null;
-    loadAllData();
+    // Solo recargar gastos, no todos los datos
+    try {
+      expenses = await financesService.getExpenses(propertyId);
+    } catch (err) {
+      console.error('Error reloading expenses:', err);
+      // Si falla, recargar todo como fallback
+      await loadAllData();
+    }
   }
   
-  function handleIncomeSuccess() {
+  async function handleIncomeSuccess() {
     showIncomeModal = false;
     selectedIncome = null;
-    loadAllData();
+    // Solo recargar ingresos, no todos los datos
+    try {
+      income = await financesService.getIncome(propertyId);
+    } catch (err) {
+      console.error('Error reloading income:', err);
+      // Si falla, recargar todo como fallback
+      await loadAllData();
+    }
   }
   
   async function handleDeleteExpense(expense) {
@@ -213,49 +241,47 @@
   </GlassCard>
 {:else if property}
   <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-fade-in px-3 sm:px-4 md:px-6">
-    <!-- Header con botón volver - Fondo más opaco -->
-    <div class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+    <!-- Header con botón volver - Más compacto -->
+    <div class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+      <div class="flex items-center gap-2 sm:gap-3">
         <button
           on:click={() => goto('/')}
-          class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors flex-shrink-0"
+          class="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
           aria-label="Volver"
         >
-          <ArrowLeft size={20} class="text-gray-900 dark:text-gray-300" style="color: rgb(17, 24, 39) !important;" />
+          <ArrowLeft size={14} class="text-gray-900 dark:text-gray-300" style="color: rgb(17, 24, 39) !important;" />
         </button>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 sm:gap-3 mb-2">
-            <div class="p-2 sm:p-3 gradient-primary rounded-xl flex-shrink-0">
-              <Home size={20} class="sm:w-7 sm:h-7 text-white" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <h1 class="text-xl sm:text-2xl md:text-3xl font-bold gradient-text truncate">{property.name}</h1>
-              <div class="flex items-center text-gray-900 dark:text-gray-300 mt-1 text-xs sm:text-sm" style="color: rgb(17, 24, 39) !important;">
-                <MapPin size={14} class="sm:w-4 sm:h-4 mr-1 flex-shrink-0" style="color: rgb(17, 24, 39) !important;" />
-                <span class="truncate" style="color: rgb(17, 24, 39) !important;">{property.address}</span>
-              </div>
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+          <div class="p-1.5 sm:p-2 gradient-primary rounded-lg flex-shrink-0">
+            <Home size={14} class="sm:w-4 sm:h-4 text-white" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <h1 class="text-base sm:text-lg md:text-xl font-bold gradient-text truncate">{property.name}</h1>
+            <div class="flex items-center text-gray-900 dark:text-gray-300 mt-0.5 text-xs" style="color: rgb(17, 24, 39) !important;">
+              <MapPin size={12} class="mr-0.5 flex-shrink-0" style="color: rgb(17, 24, 39) !important;" />
+              <span class="truncate" style="color: rgb(17, 24, 39) !important;">{property.address}</span>
             </div>
           </div>
-          {#if property.description}
-            <p class="text-gray-800 dark:text-gray-400 ml-0 sm:ml-14 text-xs sm:text-sm mt-2">{property.description}</p>
-          {/if}
         </div>
         
-        <div class="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+        <div class="flex gap-1.5 flex-shrink-0">
           {#if canEdit()}
-            <Button variant="secondary" on:click={() => showEditModal = true} className="text-xs sm:text-sm flex-1 sm:flex-initial">
-              <Settings size={16} class="sm:w-[18px] sm:h-[18px] inline mr-1 sm:mr-1.5" />
+            <Button variant="secondary" on:click={() => showEditModal = true} className="text-xs px-2 py-1">
+              <Settings size={14} class="inline mr-1" />
               <span class="hidden sm:inline">Editar</span>
             </Button>
           {/if}
           {#if canInvite()}
-            <Button variant="secondary" on:click={() => showUserAccess = !showUserAccess} className="text-xs sm:text-sm flex-1 sm:flex-initial">
-              <UserPlus size={16} class="sm:w-[18px] sm:h-[18px] inline mr-1 sm:mr-1.5" />
+            <Button variant="secondary" on:click={() => showUserAccess = !showUserAccess} className="text-xs px-2 py-1">
+              <UserPlus size={14} class="inline mr-1" />
               <span class="hidden sm:inline">Usuarios</span>
             </Button>
           {/if}
         </div>
       </div>
+      {#if property.description}
+        <p class="text-gray-800 dark:text-gray-400 text-xs mt-2 ml-8 sm:ml-11 line-clamp-2">{property.description}</p>
+      {/if}
     </div>
     
     <!-- Gestión de Usuarios -->
@@ -334,9 +360,21 @@
       </div>
       
       {#if rooms.length > 0}
+        {@const privateRooms = rooms.filter(r => r.room_type !== 'common')}
+        {@const commonRooms = rooms.filter(r => r.room_type === 'common')}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {#each rooms as room (room.id)}
-            <!-- Se muestran todas las habitaciones (incluyendo salas comunes) pero no se cuentan en las estadísticas -->
+          <!-- Primero las habitaciones privadas (más movimiento) -->
+          {#each privateRooms as room (room.id)}
+            <RoomCard 
+              {room} 
+              {propertyId}
+              allRooms={rooms}
+              showQuickActions={canEdit()}
+              on:changed={loadAllData}
+            />
+          {/each}
+          <!-- Luego las zonas comunes (al final) -->
+          {#each commonRooms as room (room.id)}
             <RoomCard 
               {room} 
               {propertyId}

@@ -45,7 +45,7 @@
     : getTodayDate();
   
   // Obtener duración por defecto
-  const defaultMonths = tenant?.contract_months || 12;
+  const defaultMonths = tenant?.contract_months || 6;
   
   // Calcular fecha de fin por defecto
   const defaultEndDate = tenant?.contract_end_date

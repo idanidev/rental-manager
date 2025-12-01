@@ -46,7 +46,7 @@
         depositAmount: tenant.deposit_amount || 0,
         startDate: tenant.contract_start_date || new Date().toISOString(),
         endDate: tenant.contract_end_date || new Date().toISOString(),
-        contractMonths: tenant.contract_months || 12,
+        contractMonths: tenant.contract_months || 6,
         contractNotes: tenant.contract_notes || '',
         ownerName: $userStore?.user_metadata?.name || $userStore?.email?.split('@')[0] || 'Propietario',
         ownerDni: $userStore?.user_metadata?.dni || ''

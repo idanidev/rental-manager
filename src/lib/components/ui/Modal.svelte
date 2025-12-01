@@ -15,6 +15,27 @@
   
   let modalElement;
   
+  // Bloquear scroll del body cuando el modal está abierto
+  $: if (open && typeof document !== 'undefined') {
+    // Guardar el scroll actual
+    const scrollY = window.scrollY;
+    // Bloquear scroll
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+  } else if (typeof document !== 'undefined') {
+    // Restaurar scroll cuando se cierra
+    const scrollY = document.body.style.top;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    if (scrollY) {
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    }
+  }
+  
   // Action para mover el elemento al body
   function portal(node) {
     const originalParent = node.parentElement;
@@ -45,6 +66,16 @@
       close();
     }
   }
+  
+  onDestroy(() => {
+    // Asegurar que se restaure el scroll al destruir el componente
+    if (typeof document !== 'undefined') {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+    }
+  });
 </script>
 
 {#if open}
