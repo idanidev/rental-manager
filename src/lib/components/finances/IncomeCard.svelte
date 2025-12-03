@@ -7,13 +7,39 @@
   export let onDelete = null;
   export let onTogglePaid = null;
   
-  $: formattedMonth = new Date(income.month + '-01').toLocaleDateString('es-ES', {
-    month: 'long',
-    year: 'numeric'
-  });
+  // Función helper para formatear fechas de forma segura
+  /**
+   * @param {string | null | undefined} dateString
+   * @param {object} options
+   */
+  function formatDate(dateString, options = {}) {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      return date.toLocaleDateString('es-ES', options);
+    } catch {
+      return null;
+    }
+  }
+  
+  $: formattedMonth = income.month 
+    ? (() => {
+        try {
+          // Si month es solo "YYYY-MM", agregar "-01" para crear fecha válida
+          const monthStr = income.month.includes('T') 
+            ? income.month.split('T')[0] 
+            : income.month;
+          const dateStr = monthStr.length === 7 ? `${monthStr}-01` : monthStr;
+          return formatDate(dateStr, { month: 'long', year: 'numeric' });
+        } catch {
+          return null;
+        }
+      })()
+    : null;
   
   $: formattedPaymentDate = income.payment_date 
-    ? new Date(income.payment_date).toLocaleDateString('es-ES', {
+    ? formatDate(income.payment_date, {
         day: 'numeric',
         month: 'short',
         year: 'numeric'
@@ -53,10 +79,12 @@
           <DoorOpen size={14} />
           <span>{income.room?.name || 'Habitación'}</span>
         </div>
-        <div class="flex items-center gap-1">
-          <Calendar size={14} />
-          <span>{formattedMonth}</span>
-        </div>
+        {#if formattedMonth}
+          <div class="flex items-center gap-1">
+            <Calendar size={14} />
+            <span>{formattedMonth}</span>
+          </div>
+        {/if}
         {#if income.paid && formattedPaymentDate}
           <div class="flex items-center gap-1 text-green-600 dark:text-green-400">
             <CheckCircle size={14} />

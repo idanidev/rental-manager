@@ -11,9 +11,29 @@
   
   const dispatch = createEventDispatcher();
   
+  // Función helper para formatear fechas de forma segura
+  function formatDate(dateString, options = { month: 'short', year: 'numeric' }) {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      return date.toLocaleDateString('es-ES', options);
+    } catch {
+      return null;
+    }
+  }
+
   // Calcular días hasta vencimiento del contrato
   $: daysUntilExpiry = tenant.contract_end_date 
-    ? Math.floor((new Date(tenant.contract_end_date) - new Date()) / (1000 * 60 * 60 * 24))
+    ? (() => {
+        try {
+          const endDate = new Date(tenant.contract_end_date);
+          if (isNaN(endDate.getTime())) return null;
+          return Math.floor((endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        } catch {
+          return null;
+        }
+      })()
     : null;
   
   $: isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
@@ -88,12 +108,15 @@
       {/if}
       
       {#if tenant.contract_end_date}
-        <div class="flex items-center gap-2 text-sm">
-          <Calendar size={16} class="text-pink-600" />
-          <span class="font-semibold">
-            {new Date(tenant.contract_end_date).toLocaleDateString('es-ES', { month: 'short', year: 'numeric' })}
-          </span>
-        </div>
+        {@const formattedDate = formatDate(tenant.contract_end_date)}
+        {#if formattedDate}
+          <div class="flex items-center gap-2 text-sm">
+            <Calendar size={16} class="text-pink-600" />
+            <span class="font-semibold">
+              {formattedDate}
+            </span>
+          </div>
+        {/if}
       {/if}
     </div>
 

@@ -1,5 +1,5 @@
 <script>
-  import { DoorOpen, User, Euro, Maximize, Home, Camera, UserPlus, UserX, Calendar, AlertCircle, MoveRight, Edit } from 'lucide-svelte';
+  import { DoorOpen, User, Euro, Maximize, Home, Camera, UserPlus, UserX, Calendar, AlertCircle, MoveRight, Edit, Check, LogOut } from 'lucide-svelte';
   import GlassCard from '../ui/GlassCard.svelte';
   import QuickCheckIn from '../tenants/QuickCheckIn.svelte';
   import QuickCheckOut from '../tenants/QuickCheckOut.svelte';
@@ -86,13 +86,61 @@
     }
   }
   
+  // Función helper para formatear fechas de forma segura
+  /**
+   * @param {string | null | undefined} dateString
+   */
+  function formatDate(dateString) {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return null;
+    }
+  }
+
   // Calcular días hasta vencimiento
   $: daysUntilExpiry = tenantData?.contract_end_date 
-    ? Math.floor((new Date(tenantData.contract_end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    ? (() => {
+        try {
+          const endDate = new Date(tenantData.contract_end_date);
+          if (isNaN(endDate.getTime())) return null;
+          return Math.floor((endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        } catch {
+          return null;
+        }
+      })()
     : null;
   
   $: isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
   $: isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
+  
+  // Calcular progreso del contrato
+  $: contractProgress = (() => {
+    if (!tenantData?.contract_start_date || !tenantData?.contract_end_date || !tenantData?.contract_months) return null;
+    try {
+      const startDate = new Date(tenantData.contract_start_date);
+      const endDate = new Date(tenantData.contract_end_date);
+      const today = new Date();
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
+      
+      const totalDays = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const passedDays = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const percentage = totalDays > 0 ? Math.max(0, Math.min(100, (passedDays / totalDays) * 100)) : 0;
+      const monthsPassed = Math.floor(passedDays / 30);
+      
+      return {
+        percentage,
+        monthsPassed,
+        totalMonths: tenantData.contract_months
+      };
+    } catch {
+      return null;
+    }
+  })();
   
   /**
    * @param {MouseEvent | KeyboardEvent} e
@@ -151,7 +199,7 @@
 <GlassCard className="cursor-pointer">
   <div 
     on:click={(_e) => { if (onClick) onClick(); }}
-    class="w-full text-left space-y-3 relative"
+    class="w-full text-left space-y-4 relative"
     role="button"
     tabindex="0"
     on:keydown={(e) => { if (e.key === 'Enter' && onClick) onClick(); }}
@@ -167,154 +215,142 @@
       </div>
     {/if}
     
-    <!-- Header -->
-    <div class="flex items-center justify-between relative z-10">
-      <div class="flex items-center gap-2">
-        <div class="p-2 {isCommonRoom ? 'bg-blue-500' : room.occupied ? 'gradient-primary' : 'bg-white/60 dark:bg-gray-700'} rounded-lg transition-all">
-          {#if isCommonRoom}
-            <Home size={20} class="text-white" />
-          {:else}
-            <DoorOpen size={20} class="{room.occupied ? 'text-white' : 'text-gray-500'}" />
-          {/if}
-        </div>
-        <div>
-          <div class="flex items-center gap-1.5">
-            <h4 class="text-base sm:text-lg font-bold text-gray-800">
-              {room.name}
-            </h4>
-            {#if photoCount > 0}
-              <div class="flex items-center gap-0.5 text-xs text-gray-600 dark:text-gray-400">
-                <Camera size={10} />
-                <span>{photoCount}</span>
-              </div>
-            {/if}
-          </div>
-          {#if isCommonRoom}
-            <div class="text-xs text-blue-600 font-medium mt-1">
-              Sala Común
-            </div>
-          {:else if tenantData}
-            <div class="flex flex-col gap-0.5 mt-1">
-              <div class="flex items-center text-sm text-gray-800 font-medium">
-                <User size={14} class="mr-1" />
-                {tenantData.full_name}
-              </div>
-              {#if tenantData.email}
-                <div class="text-xs text-gray-600 dark:text-gray-400 truncate">
-                  {tenantData.email}
-                </div>
-              {/if}
-              {#if tenantData.phone}
-                <div class="text-xs text-gray-600 dark:text-gray-400">
-                  📞 {tenantData.phone}
-                </div>
-              {/if}
-              {#if tenantData.contract_start_date}
-                <div class="text-xs text-gray-600 dark:text-gray-400">
-                  📅 Inicio: {new Date(tenantData.contract_start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </div>
-              {/if}
-              {#if tenantData.contract_end_date}
-                <div class="flex items-center text-xs font-medium
-                  {isExpired ? 'text-red-600 dark:text-red-400' : isExpiringSoon ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}">
-                  <Calendar size={12} class="mr-1" />
-                  {#if isExpired && daysUntilExpiry !== null}
-                    Vencido hace {Math.abs(daysUntilExpiry)} días
-                  {:else if isExpiringSoon}
-                    Vence en {daysUntilExpiry} días
-                  {:else}
-                    Vence: {new Date(tenantData.contract_end_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  {/if}
-                </div>
-              {/if}
-            </div>
-          {:else if room.tenant_name}
-            <div class="flex items-center text-sm text-gray-700 dark:text-gray-300 mt-1">
-              <User size={14} class="mr-1" />
-              {room.tenant_name}
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Estado con chip -->
-      <div class="flex items-center gap-2">
+    <!-- Header con nombre y chips arriba -->
+    <div class="relative z-10">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+        {room.name}
+      </h3>
+      
+      <!-- Chips de estado ARRIBA -->
+      <div class="flex flex-wrap gap-2 mb-3">
         {#if !isCommonRoom}
-          <span class="px-3 py-1 rounded-full text-xs font-semibold
-            {room.occupied ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200'}">
-            {room.occupied ? 'Ocupada' : 'Disponible'}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold
+            {room.occupied 
+              ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
+              : 'bg-gradient-to-r from-gray-300 to-gray-400 text-gray-800 dark:from-gray-600 dark:to-gray-700 dark:text-gray-200'}">
+            {#if room.occupied}
+              <Check size={14} />
+              Ocupada
+            {:else}
+              <span>○</span>
+              Disponible
+            {/if}
           </span>
+          
+          {#if tenantData}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
+              <User size={14} class="text-blue-600 dark:text-blue-400" />
+              <span class="text-blue-700 dark:text-blue-300">{tenantData.full_name}</span>
+            </span>
+          {/if}
         {:else}
-          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md">
+            <Home size={14} />
             Sala Común
           </span>
         {/if}
       </div>
     </div>
 
-    <!-- Detalles -->
-    <div class="space-y-2 relative z-10">
-      <div class="grid grid-cols-2 gap-2">
-        {#if !isCommonRoom}
-          <div class="flex items-center gap-1.5 text-xs sm:text-sm">
-            <Euro size={14} class="text-orange-600" />
-            <span class="font-semibold">{room.monthly_rent}€/mes</span>
-          </div>
-        {/if}
-        
+    <!-- Grid de Info GRANDE (Precio + Tamaño) -->
+    {#if !isCommonRoom}
+      <div class="grid grid-cols-2 gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl relative z-10">
+        <div class="flex flex-col">
+          <span class="text-xs text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wide mb-1">Renta mensual</span>
+          <span class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{room.monthly_rent}€</span>
+        </div>
         {#if room.size_sqm}
-          <div class="flex items-center gap-1.5 text-xs sm:text-sm">
-            <Maximize size={14} class="text-pink-600" />
-            <span class="font-semibold">{room.size_sqm} m²</span>
+          <div class="flex flex-col">
+            <span class="text-xs text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wide mb-1">Tamaño</span>
+            <span class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{room.size_sqm} m²</span>
           </div>
         {/if}
       </div>
-      
-      <!-- Alertas de contrato -->
-      {#if tenantData && !isCommonRoom && (isExpired || isExpiringSoon)}
-        <div class="bg-{isExpired ? 'red' : 'orange'}-50 border border-{isExpired ? 'red' : 'orange'}-200 rounded-lg p-2 flex items-center gap-2">
-          <AlertCircle size={14} class="text-{isExpired ? 'red' : 'orange'}-600 flex-shrink-0" />
-          <p class="text-xs text-{isExpired ? 'red' : 'orange'}-800 font-medium">
-            {isExpired ? '⚠️ Contrato vencido' : '⏰ Contrato por vencer'}
-          </p>
-        </div>
-      {/if}
-    </div>
+    {/if}
     
-    <!-- Botones de acción directos - Tamaño táctil 44px -->
+    <!-- Sección de Contrato con Progress Bar -->
+    {#if tenantData && !isCommonRoom && tenantData.contract_start_date && tenantData.contract_end_date}
+      <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl relative z-10">
+        <div class="space-y-2 mb-3">
+          {#if tenantData.contract_start_date}
+            {@const formattedStartDate = formatDate(tenantData.contract_start_date)}
+            {#if formattedStartDate}
+              <div class="flex items-center gap-2 text-sm text-amber-900 dark:text-amber-300">
+                <Calendar size={14} />
+                <span>Inicio: {formattedStartDate}</span>
+              </div>
+            {/if}
+          {/if}
+          {#if tenantData.contract_end_date}
+            {@const formattedEndDate = formatDate(tenantData.contract_end_date)}
+            {#if formattedEndDate}
+              <div class="flex items-center gap-2 text-sm text-amber-900 dark:text-amber-300">
+                <Calendar size={14} />
+                <span class={isExpired ? 'text-red-600 dark:text-red-400 font-bold' : isExpiringSoon ? 'text-orange-600 dark:text-orange-400 font-bold' : ''}>
+                  {isExpired && daysUntilExpiry !== null
+                    ? `Vencido hace ${Math.abs(daysUntilExpiry)} días`
+                    : isExpiringSoon
+                      ? `Vence en ${daysUntilExpiry} días`
+                      : `Vence: ${formattedEndDate}`}
+                </span>
+              </div>
+            {/if}
+          {/if}
+        </div>
+        
+        {#if contractProgress}
+          <div class="space-y-1.5">
+            <div class="w-full h-2 bg-amber-200 dark:bg-amber-900/40 rounded-full overflow-hidden">
+              <div 
+                class="h-full bg-gradient-to-r from-amber-500 to-orange-600 rounded-full transition-all duration-500"
+                style="width: {contractProgress.percentage}%"
+              ></div>
+            </div>
+            <p class="text-xs text-amber-800 dark:text-amber-300 font-semibold">
+              {contractProgress.monthsPassed} de {contractProgress.totalMonths} meses
+            </p>
+          </div>
+        {/if}
+      </div>
+    {/if}
+    
+    <!-- Botones de acción - Grid 2 columnas -->
     {#if propertyId && showQuickActions}
       <div 
-        class="flex flex-wrap gap-2 mt-4 relative z-10" 
+        class="grid grid-cols-2 gap-2 relative z-10" 
         on:click|stopPropagation
         role="none"
         on:keydown|stopPropagation
       >
+        <button
+          on:click|stopPropagation={handleEditRoom}
+          class="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+        >
+          <Edit size={18} />
+          <span>Editar</span>
+        </button>
+        
         {#if !isCommonRoom}
           {#if room.occupied}
             <button
               on:click|stopPropagation={handleCheckOut}
-              class="flex-1 min-h-[44px] px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+              class="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-semibold text-sm shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              <UserX size={18} />
+              <LogOut size={18} />
               <span>Check-Out</span>
             </button>
           {:else}
             <button
               on:click|stopPropagation={handleCheckIn}
-              class="flex-1 min-h-[44px] px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+              class="flex items-center justify-center gap-2 min-h-[48px] px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <UserPlus size={18} />
               <span>Check-In</span>
             </button>
           {/if}
+        {:else}
+          <div></div>
         {/if}
-        <button
-          on:click|stopPropagation={handleEditRoom}
-          class="flex-1 min-h-[44px] px-4 py-2.5 glass-card hover:bg-white/80 dark:hover:bg-gray-800/80 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-        >
-          <Edit size={18} />
-          <span>Editar</span>
-        </button>
       </div>
     {/if}
     

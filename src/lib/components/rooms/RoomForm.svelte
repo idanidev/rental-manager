@@ -142,6 +142,10 @@
       // Limpiar campos UUID vacíos (convertir "" a null)
       if (dataToSend.tenant_id === '') {
         dataToSend.tenant_id = null;
+        dataToSend.occupied = false;
+      } else if (dataToSend.tenant_id) {
+        // Si hay tenant_id, marcar como ocupada automáticamente
+        dataToSend.occupied = true;
       }
       
       // Para salas comunes, asegurar que monthly_rent sea 0 o null
@@ -324,7 +328,7 @@
           {/each}
         </select>
         <p class="text-xs text-gray-500 mt-1">
-          Selecciona un inquilino de la lista o <a href="/properties/{propertyId}/tenants" target="_blank" class="text-orange-600 hover:underline">añade uno nuevo</a>
+          Selecciona un inquilino de la lista
         </p>
       </div>
       
@@ -346,9 +350,19 @@
               </p>
             {/if}
             {#if selectedTenant.contract_end_date}
-              <p class="text-orange-800">
-                <strong>Contrato vence:</strong> {new Date(selectedTenant.contract_end_date).toLocaleDateString('es-ES')}
-              </p>
+              {@const endDate = selectedTenant.contract_end_date ? (() => {
+                try {
+                  const date = new Date(selectedTenant.contract_end_date);
+                  return isNaN(date.getTime()) ? null : date.toLocaleDateString('es-ES');
+                } catch {
+                  return null;
+                }
+              })() : null}
+              {#if endDate}
+                <p class="text-orange-800">
+                  <strong>Contrato vence:</strong> {endDate}
+                </p>
+              {/if}
             {/if}
           </div>
         </div>
@@ -620,23 +634,23 @@
   {/if}
 
   <!-- Botones de navegación -->
-  <div class="flex gap-3 pt-4">
-    <Button type="button" variant="secondary" on:click={() => dispatch('cancel')}>
+  <div class="flex flex-col sm:flex-row gap-3 pt-4">
+    <Button type="button" variant="secondary" on:click={() => dispatch('cancel')} className="w-full sm:w-auto">
       Cancelar
     </Button>
     
     {#if currentStep > 1}
-      <Button type="button" variant="secondary" on:click={previousStep}>
+      <Button type="button" variant="secondary" on:click={previousStep} className="w-full sm:w-auto">
         Anterior
       </Button>
     {/if}
     
     {#if currentStep < totalSteps}
-      <Button type="button" on:click={nextStep} className="flex-1">
+      <Button type="button" on:click={nextStep} className="w-full sm:flex-1">
         Siguiente
       </Button>
     {:else}
-      <Button type="submit" disabled={loading} className="flex-1">
+      <Button type="submit" disabled={loading} className="w-full sm:flex-1">
         {loading ? 'Guardando...' : room ? 'Actualizar' : 'Crear Habitación'}
       </Button>
     {/if}

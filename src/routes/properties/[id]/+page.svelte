@@ -4,7 +4,7 @@
   import { goto } from '$app/navigation';
   import { 
     Home, MapPin, Users, TrendingUp, Settings, UserPlus, ArrowLeft,
-    DoorOpen, Euro, Receipt, Plus, Edit, Trash2
+    DoorOpen, Euro, Receipt, Plus, Edit, Trash2, PlusCircle, ChevronRight
   } from 'lucide-svelte';
   import { propertiesService } from '$lib/services/properties';
   import { roomsService } from '$lib/services/rooms';
@@ -223,6 +223,13 @@
       .filter(r => r.room_type !== 'common' && r.occupied)
       .reduce((sum, r) => sum + (parseFloat(r.monthly_rent) || 0), 0);
   }
+  
+  // Variables reactivas para stats
+  $: privateRooms = rooms.filter(r => r.room_type !== 'common');
+  $: occupiedPrivateRooms = privateRooms.filter(r => r.occupied);
+  $: occupancyPercentage = privateRooms.length > 0 ? Math.round((occupiedPrivateRooms.length / privateRooms.length) * 100) : 0;
+  $: totalRevenue = calculateMonthlyRevenue();
+  $: potentialRevenue = privateRooms.reduce((sum, r) => sum + (parseFloat(r.monthly_rent) || 0), 0);
 </script>
 
 {#if loading}
@@ -242,46 +249,52 @@
   </GlassCard>
 {:else if property}
   <div class="max-w-7xl mx-auto space-y-4 sm:space-y-6 animate-fade-in px-3 sm:px-4 md:px-6">
-    <!-- Header con botón volver - Más compacto -->
-    <div class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-      <div class="flex items-center gap-2 sm:gap-3">
+    <!-- Header MEJORADO - Iconos más grandes, mejor layout -->
+    <div class="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+      <div class="flex items-center gap-3 sm:gap-4">
         <button
           on:click={() => goto('/')}
-          class="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+          class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Volver"
         >
-          <ArrowLeft size={14} class="text-gray-900 dark:text-gray-300" style="color: rgb(17, 24, 39) !important;" />
+          <ArrowLeft size={24} class="text-gray-900 dark:text-gray-300" />
         </button>
-        <div class="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
-          <div class="p-1.5 sm:p-2 gradient-primary rounded-lg flex-shrink-0">
-            <Home size={14} class="sm:w-4 sm:h-4 text-white" />
+        <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+          <div class="p-3 gradient-primary rounded-xl flex-shrink-0">
+            <Home size={24} class="text-white" />
           </div>
           <div class="flex-1 min-w-0">
-            <h1 class="text-base sm:text-lg md:text-xl font-bold gradient-text truncate">{property.name}</h1>
-            <div class="flex items-center text-gray-900 dark:text-gray-300 mt-0.5 text-xs" style="color: rgb(17, 24, 39) !important;">
-              <MapPin size={12} class="mr-0.5 flex-shrink-0" style="color: rgb(17, 24, 39) !important;" />
-              <span class="truncate" style="color: rgb(17, 24, 39) !important;">{property.address}</span>
+            <h1 class="text-lg sm:text-xl md:text-2xl font-bold gradient-text truncate mb-1">{property.name}</h1>
+            <div class="flex items-center text-gray-700 dark:text-gray-300">
+              <MapPin size={16} class="mr-1.5 flex-shrink-0" />
+              <span class="text-sm sm:text-base truncate">{property.address || 'Sin dirección'}</span>
             </div>
           </div>
         </div>
         
-        <div class="flex gap-1.5 flex-shrink-0">
+        <div class="flex gap-2 flex-shrink-0">
           {#if canEdit()}
-            <Button variant="secondary" on:click={() => showEditModal = true} className="text-xs px-2 py-1">
-              <Settings size={14} class="inline mr-1" />
-              <span class="hidden sm:inline">Editar</span>
-            </Button>
+            <button
+              on:click={() => showEditModal = true}
+              class="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Configuración"
+            >
+              <Settings size={24} class="text-gray-700 dark:text-gray-300" />
+            </button>
           {/if}
           {#if canInvite()}
-            <Button variant="secondary" on:click={() => showUserAccess = !showUserAccess} className="text-xs px-2 py-1">
-              <UserPlus size={14} class="inline mr-1" />
-              <span class="hidden sm:inline">Usuarios</span>
-            </Button>
+            <button
+              on:click={() => showUserAccess = !showUserAccess}
+              class="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Usuarios"
+            >
+              <UserPlus size={24} class="text-gray-700 dark:text-gray-300" />
+            </button>
           {/if}
         </div>
       </div>
       {#if property.description}
-        <p class="text-gray-800 dark:text-gray-400 text-xs mt-2 ml-8 sm:ml-11 line-clamp-2">{property.description}</p>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mt-3 ml-16 sm:ml-20 line-clamp-2">{property.description}</p>
       {/if}
     </div>
     
@@ -290,94 +303,89 @@
       <UserAccessManager {propertyId} currentUserRole={userRole} />
     {/if}
     
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-4 gap-1.5 sm:gap-2 md:gap-3">
-      <div class="bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-lg">
-        <div class="flex flex-col items-center text-center">
-          <div class="p-1 sm:p-1.5 bg-white/20 rounded-md sm:rounded-lg mb-1">
-            <DoorOpen size={12} class="sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
+    <!-- Stats Grid MEJORADO - Números grandes (40px), labels completos, contexto -->
+    <div class="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
+      <!-- Stat 1: Habitaciones -->
+      <GlassCard hover={false} className="p-4 sm:p-6">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl sm:text-4xl flex-shrink-0">🛏️</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wide mb-1">Habitaciones</p>
+            <p class="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-gray-100 leading-none mb-1">
+              {occupiedPrivateRooms.length}
+            </p>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">de {privateRooms.length} totales</p>
           </div>
-          <p class="text-[10px] sm:text-xs md:text-sm lg:text-base text-white/90 font-medium leading-none mb-0.5">Habs</p>
-          <p class="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white leading-none">
-            {rooms.filter(r => r.room_type !== 'common').length}
-          </p>
         </div>
-      </div>
+      </GlassCard>
       
-      <div class="bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-lg">
-        <div class="flex flex-col items-center text-center">
-          <div class="p-1 sm:p-1.5 bg-white/20 rounded-md sm:rounded-lg mb-1">
-            <Users size={12} class="sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
+      <!-- Stat 2: Ocupación -->
+      <GlassCard hover={false} className="p-4 sm:p-6">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl sm:text-4xl flex-shrink-0">📊</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wide mb-1">Ocupación</p>
+            <p class="text-4xl sm:text-5xl md:text-6xl font-bold text-green-600 dark:text-green-400 leading-none mb-2">
+              {occupancyPercentage}%
+            </p>
+            <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-500"
+                style="width: {occupancyPercentage}%"
+              ></div>
+            </div>
           </div>
-          <p class="text-[10px] sm:text-xs md:text-sm lg:text-base text-white/90 font-medium leading-none mb-0.5">Ocup</p>
-          <p class="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white leading-none">
-            {rooms.filter(r => r.room_type !== 'common' && r.occupied).length}
-          </p>
         </div>
-      </div>
+      </GlassCard>
       
-      <div class="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-lg">
-        <div class="flex flex-col items-center text-center">
-          <div class="p-1 sm:p-1.5 bg-white/20 rounded-md sm:rounded-lg mb-1">
-            <TrendingUp size={12} class="sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
+      <!-- Stat 3: Ingresos (ocupa toda la fila) -->
+      <GlassCard hover={false} className="p-4 sm:p-6 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-orange-200 dark:border-orange-800 col-span-2">
+        <div class="flex items-center gap-3">
+          <div class="text-3xl sm:text-4xl flex-shrink-0">💰</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wide mb-1">Ingresos Mensuales</p>
+            <p class="text-4xl sm:text-5xl md:text-6xl font-bold gradient-text leading-none mb-1">
+              {totalRevenue}€
+            </p>
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">de {potentialRevenue}€ potenciales</p>
           </div>
-          <p class="text-[10px] sm:text-xs md:text-sm lg:text-base text-white/90 font-medium leading-none mb-0.5">%</p>
-          <p class="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white leading-none">
-            {(() => {
-              const privateRooms = rooms.filter(r => r.room_type !== 'common');
-              const occupiedPrivateRooms = privateRooms.filter(r => r.occupied).length;
-              return privateRooms.length > 0 ? Math.round((occupiedPrivateRooms / privateRooms.length) * 100) : 0;
-            })()}%
-          </p>
         </div>
-      </div>
-      
-      <div class="bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg sm:rounded-xl md:rounded-2xl p-2 sm:p-2.5 md:p-3 shadow-lg">
-        <div class="flex flex-col items-center text-center">
-          <div class="p-1 sm:p-1.5 bg-white/20 rounded-md sm:rounded-lg mb-1">
-            <Euro size={12} class="sm:w-3 sm:h-3 md:w-4 md:h-4 text-white" />
-          </div>
-          <p class="text-[10px] sm:text-xs md:text-sm lg:text-base text-white/90 font-medium leading-none mb-0.5">Ing</p>
-          <p class="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white leading-tight">
-            {calculateMonthlyRevenue()}€
-          </p>
-        </div>
-      </div>
+      </GlassCard>
     </div>
     
-    <!-- Tabs Navigation -->
-    <div class="glass-card p-1">
-      <div class="grid {canEdit() ? 'grid-cols-3' : 'grid-cols-2'} gap-1">
+    <!-- Tabs Navigation MEJORADO - Labels siempre visibles, mejor estado activo -->
+    <div class="glass-card p-2">
+      <div class="grid {canEdit() ? 'grid-cols-3' : 'grid-cols-2'} gap-2">
         <button
           on:click={() => activeTab = 'rooms'}
-          class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
+          class="px-3 py-3 rounded-xl font-semibold transition-all min-h-[64px] flex flex-col items-center justify-center gap-1.5
             {activeTab === 'rooms' 
-              ? 'gradient-primary text-white' 
-              : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
+              ? 'gradient-primary text-white shadow-lg shadow-orange-500/30' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-800/60'}"
         >
-          <DoorOpen size={18} />
-          <span class="hidden sm:inline">Habitaciones</span>
+          <DoorOpen size={20} />
+          <span class="text-xs sm:text-sm">Habitaciones</span>
         </button>
         <button
           on:click={() => activeTab = 'tenants'}
-          class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
+          class="px-3 py-3 rounded-xl font-semibold transition-all min-h-[64px] flex flex-col items-center justify-center gap-1.5
             {activeTab === 'tenants' 
-              ? 'gradient-primary text-white' 
-              : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
+              ? 'gradient-primary text-white shadow-lg shadow-orange-500/30' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-800/60'}"
         >
-          <Users size={18} />
-          <span class="hidden sm:inline">Inquilinos</span>
+          <Users size={20} />
+          <span class="text-xs sm:text-sm">Inquilinos</span>
         </button>
         {#if canEdit()}
           <button
             on:click={() => activeTab = 'finances'}
-            class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
+            class="px-3 py-3 rounded-xl font-semibold transition-all min-h-[64px] flex flex-col items-center justify-center gap-1.5
               {activeTab === 'finances' 
-                ? 'gradient-primary text-white' 
-                : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
+                ? 'gradient-primary text-white shadow-lg shadow-orange-500/30' 
+                : 'text-gray-600 dark:text-gray-400 hover:bg-white/60 dark:hover:bg-gray-800/60'}"
           >
-            <Receipt size={18} />
-            <span class="hidden sm:inline">Finanzas</span>
+            <Receipt size={20} />
+            <span class="text-xs sm:text-sm">Finanzas</span>
           </button>
         {/if}
       </div>
@@ -395,13 +403,21 @@
           <DoorOpen size={20} class="sm:w-6 sm:h-6" />
           Habitaciones
         </h2>
-        {#if canEdit()}
-          <Button on:click={() => { selectedRoom = null; showRoomModal = true; }} className="text-xs sm:text-sm w-full sm:w-auto">
-            <Plus size={16} class="sm:w-[18px] sm:h-[18px] inline mr-1 sm:mr-1.5" />
-            Nueva Habitación
-          </Button>
-        {/if}
       </div>
+      
+      <!-- Botón Nueva Habitación MEJORADO - Gradiente naranja, icono+texto+flecha -->
+      {#if canEdit()}
+        <button
+          on:click={() => { selectedRoom = null; showRoomModal = true; }}
+          class="w-full mb-4 sm:mb-6 flex items-center gap-3 min-h-[64px] px-4 sm:px-6 py-4 gradient-primary text-white rounded-2xl font-bold text-base sm:text-lg shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <div class="flex items-center justify-center bg-white/20 rounded-xl p-2.5">
+            <PlusCircle size={24} />
+          </div>
+          <span class="flex-1 text-left">Nueva Habitación</span>
+          <ChevronRight size={20} class="opacity-70" />
+        </button>
+      {/if}
       
       {#if rooms.length > 0}
         {@const privateRooms = rooms.filter(r => r.room_type !== 'common')}

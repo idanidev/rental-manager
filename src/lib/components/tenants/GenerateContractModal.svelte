@@ -127,21 +127,41 @@
           </div>
           
           {#if tenant.contract_start_date}
-            <div>
-              <span class="font-semibold text-gray-700 dark:text-gray-300">Fecha inicio:</span>
-              <span class="ml-2 text-gray-600 dark:text-gray-400">
-                {new Date(tenant.contract_start_date).toLocaleDateString('es-ES')}
-              </span>
-            </div>
+            {@const startDate = tenant.contract_start_date ? (() => {
+              try {
+                const date = new Date(tenant.contract_start_date);
+                return isNaN(date.getTime()) ? null : date.toLocaleDateString('es-ES');
+              } catch {
+                return null;
+              }
+            })() : null}
+            {#if startDate}
+              <div>
+                <span class="font-semibold text-gray-700 dark:text-gray-300">Fecha inicio:</span>
+                <span class="ml-2 text-gray-600 dark:text-gray-400">
+                  {startDate}
+                </span>
+              </div>
+            {/if}
           {/if}
           
           {#if tenant.contract_end_date}
-            <div>
-              <span class="font-semibold text-gray-700 dark:text-gray-300">Fecha fin:</span>
-              <span class="ml-2 text-gray-600 dark:text-gray-400">
-                {new Date(tenant.contract_end_date).toLocaleDateString('es-ES')}
-              </span>
-            </div>
+            {@const endDate = tenant.contract_end_date ? (() => {
+              try {
+                const date = new Date(tenant.contract_end_date);
+                return isNaN(date.getTime()) ? null : date.toLocaleDateString('es-ES');
+              } catch {
+                return null;
+              }
+            })() : null}
+            {#if endDate}
+              <div>
+                <span class="font-semibold text-gray-700 dark:text-gray-300">Fecha fin:</span>
+                <span class="ml-2 text-gray-600 dark:text-gray-400">
+                  {endDate}
+                </span>
+              </div>
+            {/if}
           {/if}
         </div>
         

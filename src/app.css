@@ -195,13 +195,29 @@
     }
   }
 
-  /* Estadísticas Modernas */
+  /* Estadísticas Modernas - MEJORADAS */
   .stat-card {
     @apply glass-card flex flex-col gap-2;
   }
 
   .stat-value {
-    @apply text-3xl font-bold gradient-text;
+    @apply text-5xl font-bold gradient-text leading-none;
+  }
+
+  /* Stats grandes para dashboard */
+  .stat-value-large {
+    @apply text-5xl sm:text-6xl font-bold gradient-text leading-none;
+  }
+
+  /* Stats compactos para mobile */
+  @media (max-width: 640px) {
+    .stat-value {
+      @apply text-4xl;
+    }
+    
+    .stat-value-large {
+      @apply text-4xl;
+    }
   }
 
   .stat-label {
@@ -642,5 +658,78 @@
   
   .progress-fill {
     @apply h-full gradient-primary rounded-full transition-all duration-500 ease-out;
+  }
+  
+  /* ========================================
+     SISTEMA DE ESPACIADO MEJORADO
+  ======================================== */
+  
+  /* Variables de espaciado */
+  :root {
+    --space-xs: 0.25rem;   /* 4px */
+    --space-sm: 0.5rem;    /* 8px */
+    --space-md: 1rem;      /* 16px */
+    --space-lg: 1.5rem;    /* 24px */
+    --space-xl: 2rem;      /* 32px */
+    --space-2xl: 3rem;     /* 48px */
+  }
+  
+  /* Márgenes consistentes entre secciones */
+  .section {
+    margin-bottom: var(--space-xl);
+  }
+  
+  /* Cards con padding consistente */
+  .card-spacing {
+    padding: var(--space-lg);
+  }
+  
+  .card-spacing + .card-spacing {
+    margin-top: var(--space-md);
+  }
+  
+  /* ========================================
+     JERARQUÍA TIPOGRÁFICA
+  ======================================== */
+  
+  h1, .heading-1 {
+    font-size: 2rem;       /* 32px */
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: var(--space-md);
+  }
+  
+  h2, .heading-2 {
+    font-size: 1.5rem;     /* 24px */
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: var(--space-sm);
+  }
+  
+  h3, .heading-3 {
+    font-size: 1.25rem;    /* 20px */
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: var(--space-sm);
+  }
+  
+  .body-large {
+    font-size: 1.125rem;   /* 18px */
+    line-height: 1.6;
+  }
+  
+  .body {
+    font-size: 1rem;       /* 16px */
+    line-height: 1.5;
+  }
+  
+  .body-small {
+    font-size: 0.875rem;   /* 14px */
+    line-height: 1.4;
+  }
+  
+  .caption {
+    font-size: 0.75rem;    /* 12px */
+    line-height: 1.3;
   }
 }

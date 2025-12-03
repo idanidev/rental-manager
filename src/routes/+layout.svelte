@@ -13,6 +13,7 @@
   import { permissionsService } from '$lib/services/permissions';
   import { showToast } from '$lib/stores/toast';
   import { registerServiceWorker } from '$lib/utils/pwa';
+  import NotificationBell from '$lib/components/notifications/NotificationBell.svelte';
   
   // No necesitamos exportar data/params en el layout
   
@@ -231,8 +232,13 @@
             <span class="text-lg sm:text-xl font-bold gradient-text">Rental Manager</span>
           </a>
           
-          <!-- User Menu -->
-          <div class="relative user-menu" bind:this={menuContainer} style="z-index: 10000;">
+          <!-- Notificaciones y User Menu -->
+          <div class="flex items-center gap-3">
+            <!-- Notificaciones -->
+            <NotificationBell />
+            
+            <!-- User Menu -->
+            <div class="relative user-menu" bind:this={menuContainer} style="z-index: 10000;">
             <button
               type="button"
               on:click|stopPropagation={toggleUserMenu}
@@ -316,6 +322,7 @@
                 </button>
               </div>
             {/if}
+            </div>
           </div>
         </div>
       </nav>

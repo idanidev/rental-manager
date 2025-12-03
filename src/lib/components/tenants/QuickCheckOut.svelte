@@ -126,7 +126,17 @@
               <p><strong>Teléfono:</strong> {tenantData.phone}</p>
             {/if}
             {#if tenantData.contract_end_date}
-              <p><strong>Contrato hasta:</strong> {new Date(tenantData.contract_end_date).toLocaleDateString('es-ES')}</p>
+              {@const endDate = tenantData.contract_end_date ? (() => {
+                try {
+                  const date = new Date(tenantData.contract_end_date);
+                  return isNaN(date.getTime()) ? null : date.toLocaleDateString('es-ES');
+                } catch {
+                  return null;
+                }
+              })() : null}
+              {#if endDate}
+                <p><strong>Contrato hasta:</strong> {endDate}</p>
+              {/if}
             {/if}
           </div>
         </div>

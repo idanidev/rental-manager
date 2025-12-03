@@ -228,11 +228,21 @@
     </div>
 
     {#if formData.contract_end_date}
-      <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
-        <p class="text-sm text-blue-800">
-          📅 <strong>Fecha de vencimiento:</strong> {new Date(formData.contract_end_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
-      </div>
+      {@const endDate = formData.contract_end_date ? (() => {
+        try {
+          const date = new Date(formData.contract_end_date);
+          return isNaN(date.getTime()) ? null : date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+        } catch {
+          return null;
+        }
+      })() : null}
+      {#if endDate}
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+          <p class="text-sm text-blue-800">
+            📅 <strong>Fecha de vencimiento:</strong> {endDate}
+          </p>
+        </div>
+      {/if}
     {/if}
 
     <div>

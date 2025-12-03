@@ -6,7 +6,23 @@
   export let onEdit = null;
   export let onDelete = null;
   
-  $: formattedDate = new Date(expense.date).toLocaleDateString('es-ES', {
+  // Función helper para formatear fechas de forma segura
+  /**
+   * @param {string | null | undefined} dateString
+   * @param {object} options
+   */
+  function formatDate(dateString, options = {}) {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      return date.toLocaleDateString('es-ES', options);
+    } catch {
+      return null;
+    }
+  }
+  
+  $: formattedDate = formatDate(expense.date, {
     day: 'numeric',
     month: 'short',
     year: 'numeric'
@@ -44,12 +60,14 @@
         </div>
       </div>
       
-      <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mt-2">
-        <div class="flex items-center gap-1">
-          <Calendar size={14} />
-          <span>{formattedDate}</span>
+      {#if formattedDate}
+        <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mt-2">
+          <div class="flex items-center gap-1">
+            <Calendar size={14} />
+            <span>{formattedDate}</span>
+          </div>
         </div>
-      </div>
+      {/if}
       
       {#if expense.description}
         <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">

@@ -1,16 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createMockSupabase } from '../../mocks/supabase';
 
-// Crear mock de Supabase
-const mockSupabase = createMockSupabase();
+// Mock de Supabase usando factory function
+vi.mock('$lib/services/supabase', () => {
+  const mockSupabase = {
+    auth: {
+      signInWithPassword: vi.fn(),
+      signUp: vi.fn(),
+      signOut: vi.fn(),
+      getUser: vi.fn(),
+      resetPasswordForEmail: vi.fn(),
+      updateUser: vi.fn(),
+    }
+  };
+  
+  return {
+    supabase: mockSupabase
+  };
+});
 
-// Mock del módulo de Supabase
-vi.mock('$lib/services/supabase', () => ({
-  supabase: mockSupabase
-}));
-
-// Importar el servicio DESPUÉS del mock
 import { authService } from '$lib/services/auth';
+import { supabase as mockSupabase } from '$lib/services/supabase';
 
 describe('Auth Service', () => {
   beforeEach(() => {
