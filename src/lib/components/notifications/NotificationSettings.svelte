@@ -6,12 +6,14 @@
   import { showToast } from '$lib/stores/toast';
   import GlassCard from '../ui/GlassCard.svelte';
   import Button from '../ui/Button.svelte';
-  import { Bell, Calendar, FileText, UserPlus, DollarSign, TrendingUp, Home, Save, AlertCircle, CheckCircle } from 'lucide-svelte';
-  import { requestNotificationPermission, getNotificationPermission, hasNotificationPermission } from '$lib/services/browserNotifications';
+  import { Bell, Calendar, FileText, UserPlus, DollarSign, TrendingUp, Home, Save, AlertCircle, CheckCircle, Zap } from 'lucide-svelte';
+  import { requestNotificationPermission, getNotificationPermission, hasNotificationPermission, showBrowserNotification } from '$lib/services/browserNotifications';
+  import { notificationsStore } from '$lib/stores/notifications';
   
   let loading = true;
   let saving = false;
   let requestingPermission = false;
+  let testingNotification = false;
   let browserPermission = 'default';
   let settings = {
     contract_alert_days: [7, 15, 30],
@@ -91,6 +93,35 @@
       showToast('Error al guardar configuración', 'error');
     } finally {
       saving = false;
+    }
+  }
+  
+  async function createTestNotification() {
+    if (!$userStore?.id) return;
+    
+    testingNotification = true;
+    try {
+      // Crear notificación en la base de datos
+      await notificationsService.createTestNotification($userStore.id);
+      
+      // Recargar notificaciones
+      await notificationsStore.load();
+      
+      // Si tiene permisos, mostrar también notificación del navegador
+      if (hasNotificationPermission()) {
+        showBrowserNotification('🔔 Notificación de Prueba', {
+          body: '¡Esta es una notificación de prueba! Si ves este mensaje, el sistema de notificaciones está funcionando correctamente.',
+          tag: 'test-notification',
+          icon: '/favicon.png'
+        });
+      }
+      
+      showToast('Notificación de prueba creada. Revisa el panel de notificaciones.', 'success');
+    } catch (error) {
+      console.error('Error creating test notification:', error);
+      showToast('Error al crear notificación de prueba: ' + (error.message || 'Error desconocido'), 'error');
+    } finally {
+      testingNotification = false;
     }
   }
 </script>
@@ -327,6 +358,34 @@
             />
           </label>
         </div>
+      </GlassCard>
+      
+      <!-- Botón de Prueba -->
+      <GlassCard className="mb-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="p-2 bg-yellow-500/10 rounded-lg">
+            <Zap size={24} class="text-yellow-500" />
+          </div>
+          <div class="flex-1">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Probar Notificaciones</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Crea una notificación de prueba para verificar que todo funciona correctamente</p>
+          </div>
+        </div>
+        
+        <button
+          type="button"
+          on:click={createTestNotification}
+          disabled={testingNotification}
+          class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] flex items-center justify-center gap-2 shadow-lg"
+        >
+          {#if testingNotification}
+            <div class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+            <span>Creando notificación...</span>
+          {:else}
+            <Zap size={20} />
+            <span>Crear Notificación de Prueba</span>
+          {/if}
+        </button>
       </GlassCard>
       
       <!-- Botón Guardar -->

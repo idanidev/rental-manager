@@ -206,6 +206,55 @@ export const notificationsService = {
     }
   },
   
+  /**
+   * Crear una notificación de prueba
+   * @param {string} userId
+   * @param {string} propertyId - Opcional
+   */
+  async createTestNotification(userId, propertyId = null) {
+    try {
+      // Usar la función RPC create_notification
+      const { data, error } = await supabase
+        .rpc('create_notification', {
+          p_user_id: userId,
+          p_type: 'contract_expiring',
+          p_title: '🔔 Notificación de Prueba',
+          p_message: '¡Esta es una notificación de prueba! Si ves este mensaje, el sistema de notificaciones está funcionando correctamente.',
+          p_property_id: propertyId,
+          p_metadata: {
+            test: true,
+            created_at: new Date().toISOString()
+          }
+        });
+      
+      if (error) {
+        // Si la función RPC no existe o falla, intentar insertar directamente
+        console.warn('RPC function failed, trying direct insert:', error);
+        
+        const { data: directData, error: directError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            property_id: propertyId,
+            type: 'contract_expiring',
+            title: '🔔 Notificación de Prueba',
+            message: '¡Esta es una notificación de prueba! Si ves este mensaje, el sistema de notificaciones está funcionando correctamente.',
+            metadata: testMetadata
+          })
+          .select()
+          .single();
+        
+        if (directError) throw directError;
+        return directData;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error creating test notification:', error);
+      throw error;
+    }
+  },
+  
   // ========================================
   // MÉTODOS LEGACY (compatibilidad)
   // ========================================
@@ -379,6 +428,69 @@ export const notificationsService = {
       };
     } catch (error) {
       console.error('Error getting all notifications:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Crear una notificación de prueba
+   * @param {string} userId
+   * @param {string} propertyId - Opcional
+   */
+  async createTestNotification(userId, propertyId = null) {
+    try {
+      // Intentar usar la función RPC primero
+      const testMetadata = {
+        test: true,
+        created_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase
+        .rpc('create_notification', {
+          p_user_id: userId,
+          p_type: 'contract_expiring',
+          p_title: '🔔 Notificación de Prueba',
+          p_message: '¡Esta es una notificación de prueba! Si ves este mensaje, el sistema de notificaciones está funcionando correctamente.',
+          p_property_id: propertyId,
+          p_metadata: testMetadata
+        });
+      
+      if (error) {
+        // Si la función RPC no existe o falla, intentar insertar directamente
+        console.warn('RPC function failed, trying direct insert:', error);
+        
+        const { data: directData, error: directError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            property_id: propertyId,
+            type: 'contract_expiring',
+            title: '🔔 Notificación de Prueba',
+            message: '¡Esta es una notificación de prueba! Si ves este mensaje, el sistema de notificaciones está funcionando correctamente.',
+            metadata: testMetadata
+          })
+          .select()
+          .single();
+        
+        if (directError) throw directError;
+        return directData;
+      }
+      
+      // Si RPC devuelve solo un UUID, obtener la notificación completa
+      if (typeof data === 'string') {
+        const { data: notification, error: fetchError } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('id', data)
+          .single();
+        
+        if (fetchError) throw fetchError;
+        return notification;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error creating test notification:', error);
       throw error;
     }
   }
