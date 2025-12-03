@@ -1,5 +1,5 @@
 <script>
-  import { DoorOpen, User, Euro, Maximize, Home, Camera, UserPlus, UserX, Calendar, AlertCircle, MoveRight, Edit, Settings, FileText, MoreVertical, Download } from 'lucide-svelte';
+  import { DoorOpen, User, Euro, Maximize, Home, Camera, UserPlus, UserX, Calendar, AlertCircle, MoveRight, Edit } from 'lucide-svelte';
   import GlassCard from '../ui/GlassCard.svelte';
   import QuickCheckIn from '../tenants/QuickCheckIn.svelte';
   import QuickCheckOut from '../tenants/QuickCheckOut.svelte';
@@ -11,10 +11,8 @@
   import { tenantsService } from '$lib/services/tenants';
   import { propertiesService } from '$lib/services/properties';
   import { roomsService } from '$lib/services/rooms';
-  import { pdfService } from '$lib/services/pdf';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { createEventDispatcher } from 'svelte';
-  import { theme } from '$lib/stores/theme';
   
   export let room;
   export let propertyId = null;
@@ -32,43 +30,6 @@
   let tenantData = null;
   let propertyData = null;
   let commonRooms = [];
-  let showMenu = false;
-  let menuContainer = null;
-  let menuButton = null;
-  let cleanupMenuListener = null;
-  let generatingAd = false;
-  let adError = '';
-  let menuStyle = '';
-  
-  // Cerrar menú al hacer clic fuera
-  $: if (showMenu && typeof window !== 'undefined') {
-    if (cleanupMenuListener) {
-      cleanupMenuListener();
-      cleanupMenuListener = null;
-    }
-    
-    const handleClickOutside = (e) => {
-      if (menuContainer && !menuContainer.contains(e.target)) {
-        showMenu = false;
-      }
-    };
-    
-    setTimeout(() => {
-      document.addEventListener('click', handleClickOutside, true);
-      cleanupMenuListener = () => {
-        document.removeEventListener('click', handleClickOutside, true);
-      };
-    }, 0);
-  } else if (cleanupMenuListener) {
-    cleanupMenuListener();
-    cleanupMenuListener = null;
-  }
-  
-  onDestroy(() => {
-    if (cleanupMenuListener) {
-      cleanupMenuListener();
-    }
-  });
   
   onMount(async () => {
     if (propertyId) {
@@ -144,36 +105,6 @@
     showEditRoomModal = true;
   }
   
-  // Cerrar menú al hacer clic fuera
-  $: if (showMenu && typeof window !== 'undefined') {
-    if (cleanupMenuListener) {
-      cleanupMenuListener();
-      cleanupMenuListener = null;
-    }
-    
-    const handleClickOutside = (e) => {
-      if (menuContainer && !menuContainer.contains(e.target)) {
-        showMenu = false;
-      }
-    };
-    
-    setTimeout(() => {
-      document.addEventListener('click', handleClickOutside, true);
-      cleanupMenuListener = () => {
-        document.removeEventListener('click', handleClickOutside, true);
-      };
-    }, 0);
-  } else if (cleanupMenuListener) {
-    cleanupMenuListener();
-    cleanupMenuListener = null;
-  }
-  
-  onDestroy(() => {
-    if (cleanupMenuListener) {
-      cleanupMenuListener();
-    }
-  });
-  
   async function handleSuccess() {
     // Recargar datos del inquilino
     if (room.tenant_id && propertyId) {
@@ -186,64 +117,11 @@
     dispatch('changed');
   }
   
-  async function handleGenerateAd(e) {
-    if (e) e.stopPropagation();
-    
-    if (!room || !propertyData) {
-      adError = 'Faltan datos de la habitación o propiedad';
-      return;
-    }
-    
-    generatingAd = true;
-    adError = '';
-    showMenu = false;
-    
-    try {
-      // Obtener URLs completas de las fotos de la habitación
-      const roomPhotoUrls = (room.photos || []).map(photo => {
-        if (typeof photo === 'string') {
-          return storageService.getPhotoUrl(photo);
-        }
-        return photo.url || photo;
-      });
-      
-      // Obtener URLs completas de las fotos de zonas comunes
-      const commonRoomsWithPhotos = commonRooms.map(r => ({
-        name: r.name,
-        photos: (r.photos || []).map(photo => {
-          if (typeof photo === 'string') {
-            return storageService.getPhotoUrl(photo);
-          }
-          return photo.url || photo;
-        })
-      }));
-      
-      const adData = {
-        roomName: room.name,
-        propertyName: propertyData.name,
-        propertyAddress: propertyData.address,
-        monthlyRent: room.monthly_rent || 0,
-        sizeSqm: room.size_sqm || null,
-        description: propertyData.description || `Habitación en ${propertyData.name}, ${propertyData.address}`,
-        photos: roomPhotoUrls,
-        commonRooms: commonRoomsWithPhotos,
-        depositAmount: room.deposit_amount || null,
-        expenses: null
-      };
-      
-      await pdfService.generateRoomAd(adData);
-    } catch (err) {
-      adError = err.message || 'Error al generar el anuncio';
-      console.error('Error generating ad:', err);
-    } finally {
-      generatingAd = false;
-    }
-  }
 </script>
 
 <GlassCard className="cursor-pointer">
   <div 
-    on:click={(e) => { if (!showMenu && onClick) onClick(); }}
+    on:click={(e) => { if (onClick) onClick(); }}
     class="w-full text-left space-y-3 relative"
     role="button"
     tabindex="0"
@@ -330,35 +208,17 @@
         </div>
       </div>
 
-      <!-- Estado y Menú de 3 puntos -->
-      <div class="flex items-center gap-2 relative" bind:this={menuContainer}>
+      <!-- Estado con chip -->
+      <div class="flex items-center gap-2">
         {#if !isCommonRoom}
-          <span class="px-2 py-1 rounded-full text-xs font-semibold
-            {room.occupied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">
-            {room.occupied ? '✓' : '○'}
+          <span class="px-3 py-1 rounded-full text-xs font-semibold
+            {room.occupied ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-200'}">
+            {room.occupied ? 'Ocupada' : 'Disponible'}
           </span>
         {:else}
-          <span class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-            🏠
+          <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white">
+            Sala Común
           </span>
-        {/if}
-        {#if propertyId}
-          <button
-            bind:this={menuButton}
-            on:click|stopPropagation={(e) => { 
-              e.stopPropagation(); 
-              if (!showMenu && menuButton) {
-                // Calcular posición antes de mostrar el menú
-                const rect = menuButton.getBoundingClientRect();
-                menuStyle = `top: ${rect.bottom + 4}px; right: ${window.innerWidth - rect.right}px;`;
-              }
-              showMenu = !showMenu; 
-            }}
-            class="flex items-center justify-center p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors relative z-10"
-            aria-label="Más opciones"
-          >
-            <MoreVertical size={16} class="text-gray-600 dark:text-gray-400" />
-          </button>
         {/if}
       </div>
     </div>
@@ -392,82 +252,40 @@
       {/if}
     </div>
     
+    <!-- Botones de acción directos - Tamaño táctil 44px -->
+    {#if propertyId && showQuickActions}
+      <div class="flex flex-wrap gap-2 mt-4 relative z-10" on:click|stopPropagation>
+        {#if !isCommonRoom}
+          {#if room.occupied}
+            <button
+              on:click|stopPropagation={handleCheckOut}
+              class="flex-1 min-h-[44px] px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+            >
+              <UserX size={18} />
+              <span>Check-Out</span>
+            </button>
+          {:else}
+            <button
+              on:click|stopPropagation={handleCheckIn}
+              class="flex-1 min-h-[44px] px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+            >
+              <UserPlus size={18} />
+              <span>Check-In</span>
+            </button>
+          {/if}
+        {/if}
+        <button
+          on:click|stopPropagation={handleEditRoom}
+          class="flex-1 min-h-[44px] px-4 py-2.5 glass-card hover:bg-white/80 dark:hover:bg-gray-800/80 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
+        >
+          <Edit size={18} />
+          <span>Editar</span>
+        </button>
+      </div>
+    {/if}
+    
   </div>
 </GlassCard>
-
-<!-- Menú dropdown (fuera del GlassCard para z-index correcto) -->
-{#if showMenu}
-  <!-- Overlay para bloquear contenido de atrás -->
-  <div
-    class="fixed inset-0 z-[99998]"
-    style="background-color: rgba(0, 0, 0, 0.1);"
-    on:click|stopPropagation={(e) => { e.stopPropagation(); showMenu = false; }}
-    on:touchstart|stopPropagation={(e) => { e.stopPropagation(); showMenu = false; }}
-    aria-hidden="true"
-  ></div>
-  
-  <div 
-    class="fixed w-48 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[99999]"
-    style="background-color: {$theme === 'dark' ? 'rgb(30, 41, 59)' : 'rgb(255, 255, 255)'} !important; {menuStyle}"
-    on:click|stopPropagation
-  >
-    <button
-      on:click|stopPropagation={(e) => { e.stopPropagation(); handleEditRoom(e); showMenu = false; }}
-      class="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left text-sm"
-      style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;"
-    >
-      <Settings size={14} style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;" />
-      <span>Editar habitación</span>
-    </button>
-    {#if !isCommonRoom}
-      <button
-        on:click|stopPropagation={(e) => { e.stopPropagation(); handleEdit(e); showMenu = false; }}
-        class="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left text-sm"
-        style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;"
-      >
-        <Edit size={14} style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;" />
-        <span>Editar inquilino</span>
-      </button>
-      <button
-        on:click|stopPropagation={(e) => { e.stopPropagation(); handleMove(e); showMenu = false; }}
-        class="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left text-sm"
-        style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;"
-      >
-        <MoveRight size={14} style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;" />
-        <span>Mover inquilino</span>
-      </button>
-      <div class="h-px bg-gray-200 dark:bg-gray-700 my-1"></div>
-      <button
-        on:click|stopPropagation={handleGenerateAd}
-        disabled={generatingAd || !propertyData}
-        class="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-left text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        style="color: rgb(29, 78, 216) !important;"
-      >
-        <Download size={14} style="color: rgb(29, 78, 216) !important;" />
-        <span>{generatingAd ? 'Generando...' : 'Anuncio PDF'}</span>
-      </button>
-      {#if room.occupied}
-        <button
-          on:click|stopPropagation={(e) => { e.stopPropagation(); handleCheckOut(e); showMenu = false; }}
-          class="w-full flex items-center gap-2 px-3 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-left text-sm"
-          style="color: rgb(220, 38, 38) !important;"
-        >
-          <UserX size={14} style="color: rgb(220, 38, 38) !important;" />
-          <span>Check-Out</span>
-        </button>
-      {:else}
-        <button
-          on:click|stopPropagation={(e) => { e.stopPropagation(); handleCheckIn(e); showMenu = false; }}
-          class="w-full flex items-center gap-2 px-3 py-2 hover:bg-green-50 dark:hover:bg-green-900/20 text-left text-sm"
-          style="color: rgb(22, 163, 74) !important;"
-        >
-          <UserPlus size={14} style="color: rgb(22, 163, 74) !important;" />
-          <span>Check-In</span>
-        </button>
-      {/if}
-    {/if}
-  </div>
-{/if}
 
 <!-- Modales de Check-In/Check-Out/Move (fuera del GlassCard) -->
 {#if propertyId}

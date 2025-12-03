@@ -53,6 +53,7 @@
   let contractRoom = null;
   let showEditTenantModal = false;
   let selectedTenantForEdit = null;
+  let activeTab = 'resumen'; // 'resumen', 'rooms', 'tenants', 'finances'
   
   $: propertyId = $page.params.id;
   
@@ -344,7 +345,72 @@
       </div>
     </div>
     
-    <!-- SECCIÓN: HABITACIONES -->
+    <!-- Tabs Navigation -->
+    <div class="glass-card p-1">
+      <div class="grid grid-cols-4 gap-1">
+        <button
+          on:click={() => activeTab = 'resumen'}
+          class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
+            {activeTab === 'resumen' 
+              ? 'gradient-primary text-white' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
+        >
+          <Home size={18} />
+          <span class="hidden sm:inline">Resumen</span>
+        </button>
+        <button
+          on:click={() => activeTab = 'rooms'}
+          class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
+            {activeTab === 'rooms' 
+              ? 'gradient-primary text-white' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
+        >
+          <DoorOpen size={18} />
+          <span class="hidden sm:inline">Habitaciones</span>
+        </button>
+        <button
+          on:click={() => activeTab = 'tenants'}
+          class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
+            {activeTab === 'tenants' 
+              ? 'gradient-primary text-white' 
+              : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
+        >
+          <Users size={18} />
+          <span class="hidden sm:inline">Inquilinos</span>
+        </button>
+        {#if canEdit()}
+          <button
+            on:click={() => activeTab = 'finances'}
+            class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
+              {activeTab === 'finances' 
+                ? 'gradient-primary text-white' 
+                : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
+          >
+            <Receipt size={18} />
+            <span class="hidden sm:inline">Finanzas</span>
+          </button>
+        {/if}
+      </div>
+    </div>
+    
+    <!-- Tab Content -->
+    <div class="tab-transition">
+      <!-- Tab: Resumen -->
+      {#if activeTab === 'resumen'}
+        <div class="space-y-4 animate-fade-in">
+          <GlassCard>
+            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Vista General</h3>
+            <p class="text-gray-600 dark:text-gray-400">
+              Selecciona una pestaña para ver más detalles sobre habitaciones, inquilinos o finanzas.
+            </p>
+          </GlassCard>
+        </div>
+      {/if}
+      
+      <!-- Tab: Habitaciones -->
+      {#if activeTab === 'rooms'}
+        <div class="space-y-4 animate-fade-in">
+          <!-- SECCIÓN: HABITACIONES -->
     <div>
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
         <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-200 flex items-center gap-2">
@@ -403,9 +469,14 @@
         </GlassCard>
       {/if}
     </div>
-    
-    <!-- SECCIÓN: INQUILINOS -->
-    <div>
+        </div>
+      {/if}
+      
+      <!-- Tab: Inquilinos -->
+      {#if activeTab === 'tenants'}
+        <div class="space-y-4 animate-fade-in">
+          <!-- SECCIÓN: INQUILINOS -->
+          <div>
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
         <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-200 flex items-center gap-2">
           <Users size={20} class="sm:w-6 sm:h-6" />
@@ -459,10 +530,14 @@
         </GlassCard>
       {/if}
     </div>
-    
-    <!-- SECCIÓN: GASTOS E INGRESOS (Solo si tiene permisos) -->
-    {#if canEdit()}
-      <div>
+        </div>
+      {/if}
+      
+      <!-- Tab: Finanzas -->
+      {#if activeTab === 'finances' && canEdit()}
+        <div class="space-y-4 animate-fade-in">
+          <!-- SECCIÓN: GASTOS E INGRESOS -->
+          <div>
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <Receipt size={24} />
@@ -580,8 +655,10 @@
             </GlassCard>
           {/if}
         </div>
-      </div>
-    {/if}
+          </div>
+        </div>
+      {/if}
+    </div>
   </div>
   
   <!-- Modales -->

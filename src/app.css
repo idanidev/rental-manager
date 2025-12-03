@@ -30,7 +30,7 @@
     touch-action: manipulation;
   }
   
-  /* Fix iOS - inputs no deben hacer zoom */
+  /* Fix iOS - inputs no deben hacer zoom - WCAG AA compliant */
   @supports (-webkit-touch-callout: none) {
     input[type="text"],
     input[type="email"],
@@ -42,6 +42,28 @@
     select {
       font-size: 16px !important;
     }
+  }
+  
+  /* Touch targets mínimo 44x44px para accesibilidad WCAG AA */
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  [tabindex="0"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Mejorar contraste para WCAG AA */
+  :root[data-theme="light"] {
+    --text-contrast: #1f2937; /* gray-800 */
+    --text-secondary-contrast: #374151; /* gray-700 */
+  }
+  
+  :root[data-theme="dark"] {
+    --text-contrast: #f3f4f6; /* gray-100 */
+    --text-secondary-contrast: #e5e7eb; /* gray-200 */
   }
 }
 
@@ -578,5 +600,47 @@
   
   :root[data-theme="dark"] .stat-label {
     @apply !text-gray-300;
+  }
+  
+  /* Mejoras de accesibilidad - Focus visible mejorado */
+  *:focus-visible {
+    outline: 2px solid #FF6B35;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  
+  /* Asegurar que los botones tengan suficiente espacio táctil */
+  button,
+  [role="button"] {
+    @apply transition-all duration-200;
+    -webkit-tap-highlight-color: rgba(255, 107, 53, 0.2);
+  }
+  
+  /* Responsive mobile-first - Mejores breakpoints */
+  @media (max-width: 640px) {
+    /* Asegurar que los textos sean legibles en móvil */
+    body {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    
+    /* Espaciado más compacto en móvil pero manteniendo accesibilidad */
+    .glass-card {
+      @apply p-3;
+    }
+  }
+  
+  /* Animaciones suaves para transiciones de tabs */
+  .tab-transition {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  }
+  
+  /* Progress indicator para wizards */
+  .progress-indicator {
+    @apply h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full gradient-primary rounded-full transition-all duration-500 ease-out;
   }
 }

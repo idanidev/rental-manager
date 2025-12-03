@@ -38,6 +38,10 @@
   let selectedTenant = null;
   let currentRoomId = room?.id || 'new'; // ID actual de la habitación para PhotoGallery
   
+  // Wizard state
+  let currentStep = 1;
+  const totalSteps = 2;
+  
   // Cargar inquilinos disponibles
   onMount(async () => {
     try {
@@ -68,6 +72,36 @@
   } else {
     selectedTenant = null;
   }
+  
+  // Wizard navigation
+  function nextStep() {
+    // Validar paso 1 antes de continuar
+    if (currentStep === 1) {
+      if (!formData.name || formData.name.trim() === '') {
+        error = 'Por favor ingresa el nombre del espacio';
+        return;
+      }
+      if (formData.room_type === 'private') {
+        if (!formData.monthly_rent || formData.monthly_rent === '' || parseFloat(formData.monthly_rent) <= 0) {
+          error = 'Por favor ingresa la renta mensual para habitaciones privadas';
+          return;
+        }
+      }
+    }
+    error = '';
+    if (currentStep < totalSteps) {
+      currentStep++;
+    }
+  }
+  
+  function previousStep() {
+    error = '';
+    if (currentStep > 1) {
+      currentStep--;
+    }
+  }
+  
+  $: progressPercentage = (currentStep / totalSteps) * 100;
 
   async function handleSubmit() {
     // Validar nombre (obligatorio siempre)
@@ -154,8 +188,34 @@
 </script>
 
 <form on:submit|preventDefault={handleSubmit} class="space-y-4">
-  <!-- Tipo de habitación -->
-  <div>
+  <!-- Progress Indicator -->
+  <div class="mb-6">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+        Paso {currentStep} de {totalSteps}
+      </span>
+      <span class="text-sm text-gray-500 dark:text-gray-400">
+        {Math.round(progressPercentage)}%
+      </span>
+    </div>
+    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+      <div 
+        class="h-full gradient-primary rounded-full transition-all duration-300"
+        style="width: {progressPercentage}%"
+      ></div>
+    </div>
+  </div>
+  
+  <!-- Paso 1: Datos Básicos -->
+  {#if currentStep === 1}
+    <div class="space-y-4">
+      <div>
+        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Datos Básicos</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Completa la información esencial de la habitación</p>
+      </div>
+      
+      <!-- Tipo de habitación -->
+      <div>
     <label class="block text-sm font-medium text-gray-700 mb-2">
       <DoorOpen size={16} class="inline mr-1" />
       Tipo de espacio *
@@ -205,23 +265,35 @@
     </div>
   {/if}
 
-  <!-- Tamaño -->
-  <div>
-    <label class="block text-sm font-medium text-gray-700 mb-2">
-      <Maximize size={16} class="inline mr-1" />
-      Tamaño (m²)
-    </label>
-    <input
-      type="number"
-      bind:value={formData.size_sqm}
-      placeholder="15"
-      class="input-glass"
-      min="0"
-      step="0.1"
-    />
-  </div>
+    </div>
+    <!-- Fin Paso 1 -->
+  {/if}
+  
+  <!-- Paso 2: Opciones Avanzadas -->
+  {#if currentStep === 2}
+    <div class="space-y-4">
+      <div>
+        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Opciones Avanzadas</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Información adicional opcional</p>
+      </div>
+      
+      <!-- Tamaño -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <Maximize size={16} class="inline mr-1" />
+          Tamaño (m²)
+        </label>
+        <input
+          type="number"
+          bind:value={formData.size_sqm}
+          placeholder="15"
+          class="input-glass"
+          min="0"
+          step="0.1"
+        />
+      </div>
 
-  <!-- Estado de ocupación (solo para habitaciones privadas) -->
+      <!-- Estado de ocupación (solo para habitaciones privadas) -->
   {#if formData.room_type === 'private'}
     <div class="border-t border-gray-200 pt-4 mt-4 space-y-4">
       <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -515,19 +587,22 @@
     {/if}
   </div>
 
-  <!-- Notas -->
-  <div>
-    <label class="block text-sm font-medium text-gray-700 mb-2">
-      <FileText size={16} class="inline mr-1" />
-      Notas (opcional)
-    </label>
-    <textarea
-      bind:value={formData.notes}
-      placeholder="Detalles adicionales de la habitación"
-      class="input-glass resize-none"
-      rows="3"
-    ></textarea>
-  </div>
+      <!-- Notas -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          <FileText size={16} class="inline mr-1" />
+          Notas (opcional)
+        </label>
+        <textarea
+          bind:value={formData.notes}
+          placeholder="Detalles adicionales de la habitación"
+          class="input-glass resize-none"
+          rows="3"
+        ></textarea>
+      </div>
+    </div>
+    <!-- Fin Paso 2 -->
+  {/if}
 
   <!-- Error -->
   {#if error}
@@ -536,14 +611,27 @@
     </div>
   {/if}
 
-  <!-- Botones -->
+  <!-- Botones de navegación -->
   <div class="flex gap-3 pt-4">
     <Button type="button" variant="secondary" on:click={() => dispatch('cancel')}>
       Cancelar
     </Button>
-    <Button type="submit" disabled={loading} className="flex-1">
-      {loading ? 'Guardando...' : room ? 'Actualizar' : 'Crear Habitación'}
-    </Button>
+    
+    {#if currentStep > 1}
+      <Button type="button" variant="secondary" on:click={previousStep}>
+        Anterior
+      </Button>
+    {/if}
+    
+    {#if currentStep < totalSteps}
+      <Button type="button" on:click={nextStep} className="flex-1">
+        Siguiente
+      </Button>
+    {:else}
+      <Button type="submit" disabled={loading} className="flex-1">
+        {loading ? 'Guardando...' : room ? 'Actualizar' : 'Crear Habitación'}
+      </Button>
+    {/if}
   </div>
 </form>
 
