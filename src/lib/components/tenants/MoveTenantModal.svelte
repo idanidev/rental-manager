@@ -7,10 +7,17 @@
   import { propertiesStore } from '$lib/stores/properties';
   import { createEventDispatcher } from 'svelte';
   
+  /** @typedef {import('$lib/types').Tenant} Tenant */
+  /** @typedef {import('$lib/types').Room} Room */
+  
   export let open = false;
+  /** @type {Tenant | null} */
   export let tenant;
+  /** @type {Room | null} */
   export let currentRoom;
+  /** @type {Room[]} */
   export let allRooms = [];
+  /** @type {string | null} */
   export let propertyId = null;
   
   const dispatch = createEventDispatcher();

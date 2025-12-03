@@ -10,3 +10,5 @@ ALTER COLUMN contract_months SET DEFAULT 6;
 COMMENT ON COLUMN tenants.contract_months IS 'Duración del contrato en meses (por defecto 6 meses)';
 
 
+
+

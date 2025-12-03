@@ -53,7 +53,7 @@
   let contractRoom = null;
   let showEditTenantModal = false;
   let selectedTenantForEdit = null;
-  let activeTab = 'resumen'; // 'resumen', 'rooms', 'tenants', 'finances'
+  let activeTab = 'rooms'; // 'rooms', 'tenants', 'finances'
   
   $: propertyId = $page.params.id;
   
@@ -347,17 +347,7 @@
     
     <!-- Tabs Navigation -->
     <div class="glass-card p-1">
-      <div class="grid grid-cols-4 gap-1">
-        <button
-          on:click={() => activeTab = 'resumen'}
-          class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
-            {activeTab === 'resumen' 
-              ? 'gradient-primary text-white' 
-              : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
-        >
-          <Home size={18} />
-          <span class="hidden sm:inline">Resumen</span>
-        </button>
+      <div class="grid {canEdit() ? 'grid-cols-3' : 'grid-cols-2'} gap-1">
         <button
           on:click={() => activeTab = 'rooms'}
           class="px-4 py-3 rounded-xl font-semibold text-sm transition-all min-h-[44px] flex items-center justify-center gap-2
@@ -395,18 +385,6 @@
     
     <!-- Tab Content -->
     <div class="tab-transition">
-      <!-- Tab: Resumen -->
-      {#if activeTab === 'resumen'}
-        <div class="space-y-4 animate-fade-in">
-          <GlassCard>
-            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4">Vista General</h3>
-            <p class="text-gray-600 dark:text-gray-400">
-              Selecciona una pestaña para ver más detalles sobre habitaciones, inquilinos o finanzas.
-            </p>
-          </GlassCard>
-        </div>
-      {/if}
-      
       <!-- Tab: Habitaciones -->
       {#if activeTab === 'rooms'}
         <div class="space-y-4 animate-fade-in">

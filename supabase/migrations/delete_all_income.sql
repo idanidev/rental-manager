@@ -27,3 +27,5 @@ SELECT COUNT(*) as total_income_after FROM income;
 -- DELETE FROM income WHERE room_id = 'TU_ROOM_ID';
 
 
+
+

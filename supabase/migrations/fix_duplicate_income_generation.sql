@@ -176,3 +176,5 @@ COMMENT ON FUNCTION trigger_generate_income_on_tenant_assignment IS 'Trigger mej
 COMMENT ON FUNCTION generate_monthly_income_for_contract IS 'Genera automáticamente ingresos mensuales para un contrato de inquilino, evitando duplicados';
 
 
+
+

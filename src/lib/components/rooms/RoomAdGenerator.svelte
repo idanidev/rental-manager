@@ -5,8 +5,14 @@
   import { storageService } from '$lib/services/storage';
   import { createEventDispatcher } from 'svelte';
   
+  /** @typedef {import('$lib/types').Room} Room */
+  /** @typedef {import('$lib/types').Property} Property */
+  
+  /** @type {Room | null} */
   export let room = null;
+  /** @type {Property | null} */
   export let property = null;
+  /** @type {Room[]} */
   export let commonRooms = [];
   
   const dispatch = createEventDispatcher();
@@ -25,7 +31,7 @@
     
     try {
       // Obtener URLs completas de las fotos de la habitación
-      const roomPhotoUrls = (room.photos || []).map(photo => {
+      const roomPhotoUrls = (room.photos || []).map((/** @type {string | any} */ photo) => {
         if (typeof photo === 'string') {
           return storageService.getPhotoUrl(photo);
         }
@@ -33,9 +39,9 @@
       });
       
       // Obtener URLs completas de las fotos de zonas comunes
-      const commonRoomsWithPhotos = commonRooms.map(r => ({
+      const commonRoomsWithPhotos = commonRooms.map((/** @type {Room} */ r) => ({
         name: r.name,
-        photos: (r.photos || []).map(photo => {
+        photos: (r.photos || []).map((/** @type {string | any} */ photo) => {
           if (typeof photo === 'string') {
             return storageService.getPhotoUrl(photo);
           }
@@ -58,8 +64,8 @@
       
       await pdfService.generateRoomAd(adData);
       dispatch('generated');
-    } catch (err) {
-      error = err.message || 'Error al generar el anuncio';
+    } catch (/** @type {any} */ err) {
+      error = err?.message || 'Error al generar el anuncio';
       console.error('Error generating ad:', err);
     } finally {
       loading = false;

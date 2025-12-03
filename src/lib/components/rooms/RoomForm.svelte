@@ -11,12 +11,18 @@
   import { tenantsService } from '$lib/services/tenants';
   import { createEventDispatcher } from 'svelte';
   
+  /** @typedef {import('$lib/types').Room} Room */
+  /** @typedef {import('$lib/types').Tenant} Tenant */
+  /** @typedef {import('$lib/types').RoomFormData} RoomFormData */
   
+  /** @type {Room | null} */
   export let room = null; // Si existe, estamos editando
+  /** @type {string} */
   export let propertyId;
   
   const dispatch = createEventDispatcher();
   
+  /** @type {RoomFormData} */
   let formData = {
     property_id: propertyId,
     name: room?.name || '',
@@ -34,7 +40,9 @@
   let error = '';
   let showInventory = false;
   let showPhotos = false;
+  /** @type {Tenant[]} */
   let availableTenants = [];
+  /** @type {Tenant | null} */
   let selectedTenant = null;
   let currentRoomId = room?.id || 'new'; // ID actual de la habitación para PhotoGallery
   
@@ -47,7 +55,7 @@
     try {
       availableTenants = await tenantsService.getActiveTenants(propertyId);
       if (formData.tenant_id) {
-        selectedTenant = availableTenants.find(t => t.id === formData.tenant_id);
+        selectedTenant = availableTenants.find((/** @type {Tenant} */ t) => t.id === formData.tenant_id) || null;
       }
     } catch (err) {
       console.error('Error loading tenants:', err);
@@ -68,7 +76,7 @@
   
   // Actualizar inquilino seleccionado cuando cambia el ID
   $: if (formData.tenant_id) {
-    selectedTenant = availableTenants.find(t => t.id === formData.tenant_id);
+    selectedTenant = availableTenants.find((/** @type {Tenant} */ t) => t.id === formData.tenant_id) || null;
   } else {
     selectedTenant = null;
   }
@@ -173,7 +181,7 @@
       // Actualizar la habitación con las fotos finales
       if (formData.photos && formData.photos.length > 0) {
         // Filtrar solo las fotos que no son URLs temporales (blob:)
-        const finalPhotos = formData.photos.filter(p => !(typeof p === 'string' && p.startsWith('blob:')));
+        const finalPhotos = formData.photos.filter((/** @type {string} */ p) => !(typeof p === 'string' && p.startsWith('blob:')));
         await roomsService.updateRoom(createdRoom.id, { photos: finalPhotos });
       }
       

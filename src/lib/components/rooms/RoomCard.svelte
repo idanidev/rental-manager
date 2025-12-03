@@ -14,9 +14,17 @@
   import { onMount } from 'svelte';
   import { createEventDispatcher } from 'svelte';
   
+  /** @typedef {import('$lib/types').Room} Room */
+  /** @typedef {import('$lib/types').Tenant} Tenant */
+  /** @typedef {import('$lib/types').Property} Property */
+  
+  /** @type {Room} */
   export let room;
+  /** @type {string | null} */
   export let propertyId = null;
+  /** @type {Room[]} */
   export let allRooms = [];
+  /** @type {(() => void) | null} */
   export let onClick = null;
   export let showQuickActions = false;
   
@@ -27,8 +35,11 @@
   let showMoveModal = false;
   let showEditModal = false;
   let showEditRoomModal = false;
+  /** @type {Tenant | null} */
   let tenantData = null;
+  /** @type {Property | null} */
   let propertyData = null;
+  /** @type {Room[]} */
   let commonRooms = [];
   
   onMount(async () => {
@@ -39,6 +50,7 @@
   });
   
   async function loadPropertyData() {
+    if (!propertyId) return;
     try {
       propertyData = await propertiesService.getProperty(propertyId);
     } catch (err) {
@@ -47,9 +59,10 @@
   }
   
   async function loadCommonRooms() {
+    if (!propertyId) return;
     try {
-      const allRooms = await roomsService.getPropertyRooms(propertyId);
-      commonRooms = allRooms.filter(r => r.room_type === 'common');
+      const allRoomsData = await roomsService.getPropertyRooms(propertyId);
+      commonRooms = (allRoomsData || []).filter((/** @type {Room} */ r) => r.room_type === 'common');
     } catch (err) {
       console.error('Error loading common rooms:', err);
     }
@@ -57,7 +70,7 @@
   
   $: isCommonRoom = room.room_type === 'common';
   $: photoCount = room.photos?.length || 0;
-  $: firstPhotoUrl = photoCount > 0 ? storageService.getPhotoUrl(room.photos[0]) : null;
+  $: firstPhotoUrl = photoCount > 0 && room.photos?.[0] ? storageService.getPhotoUrl(room.photos[0]) : null;
   
   // Cargar datos del inquilino si existe
   $: if (room.tenant_id && propertyId) {
@@ -65,6 +78,7 @@
   }
   
   async function loadTenant() {
+    if (!room?.tenant_id || !propertyId) return;
     try {
       tenantData = await tenantsService.getTenantById(room.tenant_id);
     } catch (err) {
@@ -74,32 +88,47 @@
   
   // Calcular días hasta vencimiento
   $: daysUntilExpiry = tenantData?.contract_end_date 
-    ? Math.floor((new Date(tenantData.contract_end_date) - new Date()) / (1000 * 60 * 60 * 24))
+    ? Math.floor((new Date(tenantData.contract_end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;
   
   $: isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
   $: isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
   
+  /**
+   * @param {MouseEvent | KeyboardEvent} e
+   */
   function handleCheckIn(e) {
     e.stopPropagation();
     showCheckInModal = true;
   }
   
+  /**
+   * @param {MouseEvent | KeyboardEvent} e
+   */
   function handleCheckOut(e) {
     e.stopPropagation();
     showCheckOutModal = true;
   }
   
+  /**
+   * @param {MouseEvent | KeyboardEvent} e
+   */
   function handleMove(e) {
     e.stopPropagation();
     showMoveModal = true;
   }
   
+  /**
+   * @param {MouseEvent | KeyboardEvent} e
+   */
   function handleEdit(e) {
     e.stopPropagation();
     showEditModal = true;
   }
   
+  /**
+   * @param {MouseEvent | KeyboardEvent | null} e
+   */
   function handleEditRoom(e) {
     if (e) e.stopPropagation();
     showEditRoomModal = true;
@@ -121,11 +150,11 @@
 
 <GlassCard className="cursor-pointer">
   <div 
-    on:click={(e) => { if (onClick) onClick(); }}
+    on:click={(_e) => { if (onClick) onClick(); }}
     class="w-full text-left space-y-3 relative"
     role="button"
     tabindex="0"
-    on:keydown={(e) => e.key === 'Enter' && onClick && onClick()}
+    on:keydown={(e) => { if (e.key === 'Enter' && onClick) onClick(); }}
   >
     <!-- Foto de fondo si existe -->
     {#if firstPhotoUrl}
@@ -189,7 +218,7 @@
                 <div class="flex items-center text-xs font-medium
                   {isExpired ? 'text-red-600 dark:text-red-400' : isExpiringSoon ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-400'}">
                   <Calendar size={12} class="mr-1" />
-                  {#if isExpired}
+                  {#if isExpired && daysUntilExpiry !== null}
                     Vencido hace {Math.abs(daysUntilExpiry)} días
                   {:else if isExpiringSoon}
                     Vence en {daysUntilExpiry} días
@@ -254,7 +283,12 @@
     
     <!-- Botones de acción directos - Tamaño táctil 44px -->
     {#if propertyId && showQuickActions}
-      <div class="flex flex-wrap gap-2 mt-4 relative z-10" on:click|stopPropagation>
+      <div 
+        class="flex flex-wrap gap-2 mt-4 relative z-10" 
+        on:click|stopPropagation
+        role="none"
+        on:keydown|stopPropagation
+      >
         {#if !isCommonRoom}
           {#if room.occupied}
             <button
@@ -302,21 +336,23 @@
     on:success={handleSuccess}
   />
   
-  <MoveTenantModal 
-    bind:open={showMoveModal}
-    tenant={tenantData}
-    currentRoom={room}
-    {allRooms}
-    {propertyId}
-    on:success={handleSuccess}
-  />
+  {#if propertyId}
+    <MoveTenantModal 
+      bind:open={showMoveModal}
+      tenant={tenantData}
+      currentRoom={room}
+      {allRooms}
+      propertyId={propertyId || null}
+      on:success={handleSuccess}
+    />
   
-  <EditTenantModal
-    bind:open={showEditModal}
-    tenant={tenantData}
-    {propertyId}
-    on:success={handleSuccess}
-  />
+    <EditTenantModal
+      bind:open={showEditModal}
+      tenant={tenantData}
+      propertyId={propertyId || null}
+      on:success={handleSuccess}
+    />
+  {/if}
   
   <Modal bind:open={showEditRoomModal} title="Editar Habitación" size="xl">
     <RoomForm 
