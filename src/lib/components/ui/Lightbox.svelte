@@ -49,18 +49,20 @@
 {#if open && currentImage}
   <div 
     class="fixed inset-0 bg-black/95 z-[99999] flex items-center justify-center p-4"
-    on:click|stopPropagation={close}
-    on:keydown|stopPropagation={(e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        close();
-      }
-    }}
     role="dialog"
     aria-modal="true"
     aria-label="Visor de imagen"
+    tabindex="-1"
     transition:fly={{ y: 20, duration: 200 }}
   >
+    <!-- Backdrop clickable para cerrar -->
+    <div 
+      class="absolute inset-0"
+      on:click={close}
+      role="button"
+      tabindex="0"
+      aria-label="Cerrar visor"
+    ></div>
     <!-- Close Button -->
     <button
       on:click={close}

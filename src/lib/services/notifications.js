@@ -1,8 +1,217 @@
 import { supabase } from './supabase';
 
+/**
+ * Servicio completo de notificaciones
+ * Maneja notificaciones en base de datos y configuración de usuario
+ */
 export const notificationsService = {
   /**
-   * Obtener contratos que vencen pronto
+   * Obtener todas las notificaciones del usuario
+   * @param {string} userId
+   * @param {object} options - { limit, offset, unreadOnly }
+   */
+  async getNotifications(userId, options = {}) {
+    try {
+      const { limit = 50, offset = 0, unreadOnly = false } = options;
+      
+      let query = supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      if (unreadOnly) {
+        query = query.eq('read', false);
+      }
+      
+      const { data, error } = await query;
+      
+      // Si la tabla no existe (código 42P01), retornar array vacío
+      if (error) {
+        if (error.code === '42P01' || error.message?.includes('does not exist')) {
+          console.warn('Notifications table does not exist yet. Run the migration first.');
+          return [];
+        }
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      // Si la tabla no existe, retornar array vacío en lugar de lanzar error
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        console.warn('Notifications table does not exist yet. Run the migration first.');
+        return [];
+      }
+      console.error('Error getting notifications:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Obtener contador de notificaciones no leídas
+   * @param {string} userId
+   */
+  async getUnreadCount(userId) {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_unread_notifications_count', { p_user_id: userId });
+      
+      if (error) throw error;
+      return data || 0;
+    } catch (error) {
+      console.error('Error getting unread count:', error);
+      // Fallback: contar manualmente
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('read', false);
+      
+      return count || 0;
+    }
+  },
+  
+  /**
+   * Marcar notificación como leída
+   * @param {string} notificationId
+   */
+  async markAsRead(notificationId) {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Marcar todas las notificaciones como leídas
+   * @param {string} userId
+   */
+  async markAllAsRead(userId) {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', userId)
+        .eq('read', false);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Eliminar notificación
+   * @param {string} notificationId
+   */
+  async delete(notificationId) {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Obtener configuración de notificaciones del usuario
+   * @param {string} userId
+   */
+  async getSettings(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+      
+      // Si no existe, crear configuración por defecto
+      if (!data) {
+        return await this.createDefaultSettings(userId);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error getting notification settings:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Crear configuración por defecto
+   * @param {string} userId
+   */
+  async createDefaultSettings(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .insert({
+          user_id: userId,
+          contract_alert_days: [7, 15, 30],
+          enable_contract_alerts: true,
+          enable_weekly_report: true,
+          enable_invitation_alerts: true,
+          enable_expense_alerts: true,
+          enable_income_alerts: false,
+          enable_room_alerts: false
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating default settings:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Actualizar configuración de notificaciones
+   * @param {string} userId
+   * @param {object} settings
+   */
+  async updateSettings(userId, settings) {
+    try {
+      const { data, error } = await supabase
+        .from('notification_settings')
+        .update({
+          ...settings,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      throw error;
+    }
+  },
+  
+  // ========================================
+  // MÉTODOS LEGACY (compatibilidad)
+  // ========================================
+  
+  /**
+   * Obtener contratos que vencen pronto (LEGACY - mantener compatibilidad)
    */
   async getExpiringContracts(userId, daysAhead = 30) {
     try {
@@ -10,7 +219,6 @@ export const notificationsService = {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + daysAhead);
 
-      // Obtener propiedades donde el usuario tiene acceso
       const { data: accessList, error: accessError } = await supabase
         .from('property_access')
         .select('property_id')
@@ -73,22 +281,20 @@ export const notificationsService = {
         });
       });
 
-      // Ordenar por urgencia y días restantes
       return expiringContracts.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
     } catch (error) {
       console.error('Error getting expiring contracts:', error);
       throw error;
     }
   },
-
+  
   /**
-   * Obtener contratos vencidos
+   * Obtener contratos vencidos (LEGACY)
    */
   async getExpiredContracts(userId) {
     try {
       const today = new Date();
 
-      // Obtener propiedades donde el usuario tiene acceso
       const { data: accessList, error: accessError } = await supabase
         .from('property_access')
         .select('property_id')
@@ -154,9 +360,9 @@ export const notificationsService = {
       throw error;
     }
   },
-
+  
   /**
-   * Obtener todas las notificaciones (venciendo + vencidos)
+   * Obtener todas las notificaciones (LEGACY - compatibilidad)
    */
   async getAllNotifications(userId) {
     try {
@@ -177,4 +383,3 @@ export const notificationsService = {
     }
   }
 };
-

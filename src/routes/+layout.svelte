@@ -1,6 +1,7 @@
 <script>
   import '../app.css';
   import { onMount, onDestroy } from 'svelte';
+  import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { userStore } from '$lib/stores/user';
@@ -14,12 +15,14 @@
   import { showToast } from '$lib/stores/toast';
   import { registerServiceWorker } from '$lib/utils/pwa';
   import NotificationBell from '$lib/components/notifications/NotificationBell.svelte';
+  import { notificationsStore } from '$lib/stores/notifications';
   
   // No necesitamos exportar data/params en el layout
   
   let userMenuOpen = false;
   let loading = true;
   let propertiesLoaded = false;
+  let isInitialized = false;
 
   // Handler para cambios de autenticación
   async function handleAuthChange(e) {
@@ -36,36 +39,53 @@
   // Reaccionar a cambios en userStore (solo si no estamos en proceso de logout)
   let isLoggingOut = false;
   
-  $: if ($userStore && !propertiesLoaded && !isLoggingOut && typeof window !== 'undefined') {
-    (async () => {
-      try {
-        // Procesar invitaciones pendientes primero
-        const processedInvitations = await permissionsService.processPendingInvitations(
-          $userStore.id,
-          $userStore.email
-        );
-        
-        // Mostrar notificación si se procesaron invitaciones
-        if (processedInvitations.length > 0) {
-          const propertyNames = processedInvitations.map(p => p.name).join(', ');
-          showToast(`¡Bienvenido! Se te ha dado acceso a: ${propertyNames}`, 'success');
-        }
-        
-        // Cargar propiedades
-        await propertiesStore.load($userStore.id);
-        propertiesLoaded = true;
-      } catch (err) {
-        console.error('Error al cargar propiedades:', err);
+  // Cargar datos del usuario solo en el cliente (SSR-safe)
+  async function loadUserData() {
+    if (!browser || !$userStore || propertiesLoaded || isLoggingOut || isInitialized) return;
+    
+    isInitialized = true;
+    
+    try {
+      // Procesar invitaciones pendientes primero
+      const processedInvitations = await permissionsService.processPendingInvitations(
+        $userStore.id,
+        $userStore.email
+      );
+      
+      // Mostrar notificación si se procesaron invitaciones
+      if (processedInvitations.length > 0) {
+        const propertyNames = processedInvitations.map(p => p.name).join(', ');
+        showToast(`¡Bienvenido! Se te ha dado acceso a: ${propertyNames}`, 'success');
       }
-    })();
+      
+      // Cargar propiedades
+      await propertiesStore.load($userStore.id);
+      propertiesLoaded = true;
+      
+      // Inicializar store de notificaciones (no bloquear si falla)
+      try {
+        await notificationsStore.init($userStore.id);
+      } catch (err) {
+        // No romper la aplicación si las notificaciones fallan (tablas pueden no existir aún)
+        console.warn('Could not initialize notifications store:', err);
+      }
+    } catch (err) {
+      console.error('Error al cargar propiedades:', err);
+      isInitialized = false; // Permitir reintentar
+    }
+  }
+  
+  // Solo ejecutar en el cliente
+  $: if (browser && $userStore && !propertiesLoaded && !isLoggingOut && !isInitialized) {
+    loadUserData();
   }
 
   onMount(async () => {
+    if (!browser) return;
+    
     try {
       // Registrar Service Worker para PWA
-      if (typeof window !== 'undefined') {
-        registerServiceWorker();
-      }
+      registerServiceWorker();
       
       await userStore.init();
       
@@ -84,16 +104,16 @@
     }
     
     // Escuchar cambios de autenticación
-    if (typeof window !== 'undefined') {
-      window.addEventListener('user-auth-changed', handleAuthChange);
-    }
+    window.addEventListener('user-auth-changed', handleAuthChange);
   });
   
   onDestroy(() => {
+    if (!browser) return;
+    
     // Limpiar listener
-    if (typeof window !== 'undefined') {
-      window.removeEventListener('user-auth-changed', handleAuthChange);
-    }
+    window.removeEventListener('user-auth-changed', handleAuthChange);
+    // Limpiar store de notificaciones
+    notificationsStore.clear();
   });
 
   // Función eliminada - ahora se hace directamente en el botón
@@ -149,7 +169,11 @@
     }
     
     // Redirigir inmediatamente
-    window.location.replace('/login');
+    if (browser) {
+      window.location.replace('/login');
+    } else {
+      goto('/login');
+    }
   }
   
   // Cerrar menú cuando cambia la ruta
@@ -162,7 +186,7 @@
   let menuDropdown;
   let cleanupClickListener = null;
   
-  $: if (userMenuOpen && typeof window !== 'undefined') {
+  $: if (browser && userMenuOpen) {
     // Limpiar listener anterior si existe
     if (cleanupClickListener) {
       cleanupClickListener();

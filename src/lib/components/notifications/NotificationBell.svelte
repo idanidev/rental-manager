@@ -1,56 +1,97 @@
 <script>
-  import { onMount } from 'svelte';
-  import { Bell } from 'lucide-svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { browser } from '$app/environment';
+  import { Bell, X } from 'lucide-svelte';
   import { userStore } from '$lib/stores/user';
-  import { notificationsService } from '$lib/services/notifications';
-  import { goto } from '$app/navigation';
+  import { notificationsStore, unreadCount, urgentCount } from '$lib/stores/notifications';
+  import NotificationPanel from './NotificationPanel.svelte';
   
-  let notificationCount = 0;
-  let urgentCount = 0;
-  let loading = false;
+  let panelOpen = false;
+  let panelElement;
+  let notificationsInitialized = false;
   
-  onMount(() => {
-    loadNotifications();
-    // Actualizar cada 5 minutos
-    const interval = setInterval(loadNotifications, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  });
+  // Inicializar notificaciones cuando el usuario esté disponible (solo en cliente)
+  $: if (browser && $userStore?.id && !notificationsInitialized) {
+    notificationsInitialized = true;
+    notificationsStore.init($userStore.id).catch(err => {
+      console.warn('Error initializing notifications:', err);
+    });
+  }
   
-  async function loadNotifications() {
-    if (!$userStore || loading) return;
+  function togglePanel() {
+    panelOpen = !panelOpen;
+  }
+  
+  function closePanel() {
+    panelOpen = false;
+  }
+  
+  // Cerrar panel al hacer click fuera (solo en desktop)
+  function handleClickOutside(event) {
+    if (!browser) return;
     
-    loading = true;
-    try {
-      const notifications = await notificationsService.getAllNotifications($userStore.id);
-      notificationCount = notifications.total;
-      urgentCount = notifications.urgent;
-    } catch (err) {
-      console.error('Error loading notifications:', err);
-    } finally {
-      loading = false;
+    // En móvil, el overlay ya maneja el cierre
+    if (window.innerWidth < 640) return;
+    
+    if (panelElement && !panelElement.contains(event.target)) {
+      closePanel();
     }
   }
   
-  function handleClick() {
-    goto('/notifications');
+  let cleanupClickListener = null;
+  
+  $: if (browser && panelOpen && window.innerWidth >= 640) {
+    // Solo agregar listener en desktop (en móvil el overlay maneja el cierre)
+    // Limpiar listener anterior si existe
+    if (cleanupClickListener) {
+      cleanupClickListener();
+      cleanupClickListener = null;
+    }
+    
+    // Agregar nuevo listener
+    window.addEventListener('click', handleClickOutside);
+    cleanupClickListener = () => {
+      window.removeEventListener('click', handleClickOutside);
+    };
+  } else if (cleanupClickListener) {
+    cleanupClickListener();
+    cleanupClickListener = null;
   }
+  
+  onDestroy(() => {
+    if (browser) {
+      notificationsStore.clear();
+    }
+    if (cleanupClickListener) {
+      cleanupClickListener();
+    }
+  });
 </script>
 
-<button
-  on:click={handleClick}
-  class="relative p-2.5 rounded-2xl hover:bg-white/60 transition-all duration-300 flex-shrink-0"
-  title="Notificaciones"
-  aria-label="Ver notificaciones"
->
-  <Bell size={18} class="{urgentCount > 0 ? 'text-red-600' : 'text-gray-700'}" />
+<div class="relative" bind:this={panelElement}>
+  <button
+    on:click={togglePanel}
+    class="relative p-2.5 rounded-2xl hover:bg-white/60 dark:hover:bg-gray-800/60 transition-all duration-300 flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+    title="Notificaciones"
+    aria-label="Ver notificaciones"
+    aria-expanded={panelOpen}
+  >
+    <Bell 
+      size={18} 
+      class="transition-colors {$urgentCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}" 
+    />
+    
+    {#if $unreadCount > 0}
+      <span 
+        class="absolute -top-1 -right-1 w-5 h-5 text-xs font-bold text-white rounded-full flex items-center justify-center shadow-lg
+          {$urgentCount > 0 
+            ? 'bg-red-500 animate-pulse' 
+            : 'bg-orange-500 dark:bg-orange-600'}"
+      >
+        {$unreadCount > 9 ? '9+' : $unreadCount}
+      </span>
+    {/if}
+  </button>
   
-  {#if notificationCount > 0}
-    <span 
-      class="absolute -top-1 -right-1 w-5 h-5 text-xs font-bold text-white rounded-full flex items-center justify-center
-        {urgentCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-orange-500'}"
-    >
-      {notificationCount > 9 ? '9+' : notificationCount}
-    </span>
-  {/if}
-</button>
-
+  <NotificationPanel bind:open={panelOpen} on:close={closePanel} />
+</div>
