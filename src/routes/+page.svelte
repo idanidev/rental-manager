@@ -20,9 +20,17 @@
   import LoadingSpinner from '$lib/components/ui/LoadingSpinner.svelte';
   
   let showCreateModal = false;
+  let hasInitialized = false;
   
   /** @typedef {import('$lib/types').Property} Property */
   /** @typedef {import('$lib/types').Room} Room */
+  
+  // Marcar cuando la carga inicial haya terminado
+  $: {
+    if ($propertiesLoading === false && $userStore?.id && !hasInitialized) {
+      hasInitialized = true;
+    }
+  }
   
   function handleCreateSuccess() {
     showCreateModal = false;
@@ -51,8 +59,8 @@
   <!-- Invitaciones Pendientes -->
   <MyInvitations />
 
-  <!-- Spinner de carga -->
-  {#if $propertiesLoading}
+  <!-- Spinner de carga - Mostrar mientras carga O hasta que se haya inicializado -->
+  {#if $propertiesLoading || !hasInitialized}
     <GlassCard hover={false}>
       <div class="flex flex-col items-center justify-center py-16">
         <LoadingSpinner size="lg" />
@@ -64,44 +72,52 @@
     {#if $propertiesStore.length > 0}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <GlassCard hover={false} className="p-4 sm:p-6">
-        <div class="flex flex-col items-center text-center">
-          <div class="p-2 sm:p-3 gradient-primary rounded-xl mb-2">
-            <HomeIcon size={20} class="sm:w-6 sm:h-6 text-white" />
+        <div class="flex flex-col">
+          <div class="flex items-center gap-3 sm:gap-4 mb-2">
+            <div class="p-2 sm:p-3 gradient-primary rounded-xl flex-shrink-0">
+              <HomeIcon size={20} class="sm:w-6 sm:h-6 text-white" />
+            </div>
+            <p class="text-3xl sm:text-4xl md:text-5xl font-bold gradient-text leading-none">{$totalProperties}</p>
           </div>
-          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Propiedades</p>
-          <p class="text-4xl sm:text-5xl md:text-6xl font-bold gradient-text leading-none">{$totalProperties}</p>
+          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Propiedades</p>
         </div>
       </GlassCard>
 
       <GlassCard hover={false} className="p-4 sm:p-6">
-        <div class="flex flex-col items-center text-center">
-          <div class="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl mb-2">
-            <DoorOpen size={20} class="sm:w-6 sm:h-6 text-white" />
+        <div class="flex flex-col">
+          <div class="flex items-center gap-3 sm:gap-4 mb-2">
+            <div class="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex-shrink-0">
+              <DoorOpen size={20} class="sm:w-6 sm:h-6 text-white" />
+            </div>
+            <p class="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-600 dark:text-blue-400 leading-none">{$occupiedRooms}/{$totalRooms}</p>
           </div>
-          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Habitaciones</p>
-          <p class="text-4xl sm:text-5xl md:text-6xl font-bold text-blue-600 dark:text-blue-400 leading-none">{$occupiedRooms}/{$totalRooms}</p>
+          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Habitaciones</p>
         </div>
       </GlassCard>
 
       <GlassCard hover={false} className="p-4 sm:p-6">
-        <div class="flex flex-col items-center text-center">
-          <div class="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl mb-2">
-            <TrendingUp size={20} class="sm:w-6 sm:h-6 text-white" />
+        <div class="flex flex-col">
+          <div class="flex items-center gap-3 sm:gap-4 mb-2">
+            <div class="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex-shrink-0">
+              <TrendingUp size={20} class="sm:w-6 sm:h-6 text-white" />
+            </div>
+            <p class="text-3xl sm:text-4xl md:text-5xl font-bold text-green-600 dark:text-green-400 leading-none">{$occupancyRate}%</p>
           </div>
-          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Ocupación</p>
-          <p class="text-4xl sm:text-5xl md:text-6xl font-bold text-green-600 dark:text-green-400 leading-none">{$occupancyRate}%</p>
+          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Ocupación</p>
         </div>
       </GlassCard>
       
       <GlassCard hover={false} className="p-4 sm:p-6">
-        <div class="flex flex-col items-center text-center">
-          <div class="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl mb-2">
-            <Euro size={20} class="sm:w-6 sm:h-6 text-white" />
+        <div class="flex flex-col">
+          <div class="flex items-center gap-3 sm:gap-4 mb-2">
+            <div class="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl flex-shrink-0">
+              <Euro size={20} class="sm:w-6 sm:h-6 text-white" />
+            </div>
+            <p class="text-3xl sm:text-4xl md:text-5xl font-bold text-orange-600 dark:text-orange-400 leading-tight">
+              {$propertiesStore.reduce((/** @type {number} */ sum, /** @type {Property} */ p) => sum + calculateMonthlyRevenue(p), 0)}€
+            </p>
           </div>
-          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium mb-2">Ingresos/mes</p>
-          <p class="text-3xl sm:text-4xl md:text-5xl font-bold text-orange-600 dark:text-orange-400 leading-tight">
-            {$propertiesStore.reduce((/** @type {number} */ sum, /** @type {Property} */ p) => sum + calculateMonthlyRevenue(p), 0)}€
-          </p>
+          <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">Ingresos/mes</p>
         </div>
       </GlassCard>
     </div>

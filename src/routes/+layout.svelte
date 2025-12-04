@@ -8,7 +8,7 @@
   import { propertiesStore } from '$lib/stores/properties';
   import { authService } from '$lib/services/auth';
   import { supabase } from '$lib/services/supabase';
-  import { LogOut, Menu, Moon, Sun, User, Settings } from 'lucide-svelte';
+  import { LogOut, Menu, Moon, Sun, User, Settings, Bell } from 'lucide-svelte';
   import Toast from '$lib/components/ui/Toast.svelte';
   import { theme } from '$lib/stores/theme';
   import { permissionsService } from '$lib/services/permissions';
@@ -324,12 +324,12 @@
                 </button>
                 
                 <button
-                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm opacity-50 cursor-not-allowed"
+                  on:click={() => { goto('/notifications/settings'); closeUserMenu(); }}
+                  class="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm"
                   style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;"
-                  disabled
                 >
-                  <Settings size={16} style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;" />
-                  <span>Configuración</span>
+                  <Bell size={16} style="color: {$theme === 'dark' ? 'rgb(243, 244, 246)' : 'rgb(17, 24, 39)'} !important;" />
+                  <span>Notificaciones</span>
                 </button>
                 
                 <div class="h-px bg-gray-200 dark:bg-gray-700 my-2"></div>

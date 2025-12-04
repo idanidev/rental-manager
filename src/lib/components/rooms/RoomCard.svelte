@@ -1,11 +1,12 @@
 <script>
-  import { DoorOpen, User, Euro, Maximize, Home, Camera, UserPlus, UserX, Calendar, AlertCircle, MoveRight, Edit, Check, LogOut } from 'lucide-svelte';
+  import { DoorOpen, User, Euro, Maximize, Home, Camera, UserPlus, UserX, Calendar, AlertCircle, MoveRight, Edit, Check, LogOut, FileText, Download } from 'lucide-svelte';
   import GlassCard from '../ui/GlassCard.svelte';
   import QuickCheckIn from '../tenants/QuickCheckIn.svelte';
   import QuickCheckOut from '../tenants/QuickCheckOut.svelte';
   import MoveTenantModal from '../tenants/MoveTenantModal.svelte';
   import EditTenantModal from '../tenants/EditTenantModal.svelte';
   import RoomForm from './RoomForm.svelte';
+  import RoomAdGenerator from './RoomAdGenerator.svelte';
   import Modal from '../ui/Modal.svelte';
   import { storageService } from '$lib/services/storage';
   import { tenantsService } from '$lib/services/tenants';
@@ -352,6 +353,20 @@
           <div></div>
         {/if}
       </div>
+      
+      <!-- Botón de generar PDF del anuncio (solo para habitaciones disponibles) -->
+      {#if !isCommonRoom && !room.occupied && propertyData}
+        <div class="relative z-10 mt-2" on:click|stopPropagation role="none">
+          <RoomAdGenerator 
+            {room} 
+            property={propertyData} 
+            {commonRooms}
+            on:generated={() => {
+              dispatch('changed');
+            }}
+          />
+        </div>
+      {/if}
     {/if}
     
   </div>
