@@ -11,7 +11,8 @@
   import MyInvitations from '$lib/components/invitations/MyInvitations.svelte';
   import PropertyCard from '$lib/components/properties/PropertyCard.svelte';
   
-  import { totalProperties, totalRooms, occupiedRooms, occupancyRate } from '$lib/stores/properties';
+  import { totalProperties, totalRooms, occupiedRooms, occupancyRate, propertiesStore, propertiesLoading } from '$lib/stores/properties';
+  import LoadingSpinner from '$lib/components/ui/LoadingSpinner.svelte';
   
   let showCreateModal = false;
   
@@ -45,8 +46,17 @@
   <!-- Invitaciones Pendientes -->
   <MyInvitations />
 
-  <!-- Stats Globales - 4 cuadrados de información (MEJORADOS - 3X MÁS GRANDES) -->
-  {#if $propertiesStore.length > 0}
+  <!-- Spinner de carga -->
+  {#if $propertiesLoading}
+    <GlassCard hover={false}>
+      <div class="flex flex-col items-center justify-center py-16">
+        <LoadingSpinner size="lg" />
+        <p class="mt-4 text-gray-600 dark:text-gray-400 font-medium">Cargando propiedades...</p>
+      </div>
+    </GlassCard>
+  {:else}
+    <!-- Stats Globales - 4 cuadrados de información (MEJORADOS - 3X MÁS GRANDES) -->
+    {#if $propertiesStore.length > 0}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <GlassCard hover={false} className="p-4 sm:p-6">
         <div class="flex flex-col items-center text-center">
@@ -161,6 +171,7 @@
         </div>
       </div>
     </GlassCard>
+  {/if}
   {/if}
 </div>
 

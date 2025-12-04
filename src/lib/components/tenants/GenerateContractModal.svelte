@@ -10,11 +10,25 @@
   export let tenant = null;
   export let property = null;
   export let room = null;
+  export let isRenewal = false; // Si es true, es una renovación de contrato
   
   let loading = false;
   let error = '';
   
   $: canGenerate = tenant && property;
+  
+  // Determinar si el contrato está caducado
+  $: isExpired = tenant?.contract_end_date ? (() => {
+    try {
+      const endDate = new Date(tenant.contract_end_date);
+      if (isNaN(endDate.getTime())) return false;
+      return endDate < new Date();
+    } catch {
+      return false;
+    }
+  })() : false;
+  
+  $: modalTitle = isRenewal || isExpired ? 'Renovar Contrato' : 'Generar Contrato';
   
   async function handleGenerate() {
     if (!canGenerate) {
@@ -65,7 +79,7 @@
   }
 </script>
 
-<Modal bind:open title="Generar Contrato" size="lg">
+<Modal bind:open title={modalTitle} size="lg">
   <div class="space-y-4">
     {#if error}
       <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl text-sm">

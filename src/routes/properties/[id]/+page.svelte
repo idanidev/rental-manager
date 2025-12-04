@@ -498,6 +498,11 @@
                 contractRoom = e.detail.room || tenantRoom;
                 showContractModal = true;
               }}
+              on:renew-contract={(e) => {
+                contractTenant = e.detail.tenant;
+                contractRoom = e.detail.room || tenantRoom;
+                showContractModal = true;
+              }}
               on:edit={(e) => {
                 selectedTenantForEdit = e.detail.tenant;
                 showEditTenantModal = true;

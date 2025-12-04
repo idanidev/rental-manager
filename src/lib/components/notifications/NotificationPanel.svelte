@@ -3,14 +3,12 @@
   import { createEventDispatcher } from 'svelte';
   import { browser } from '$app/environment';
   import { fade } from 'svelte/transition';
-  import { Bell, Check, X, Settings, Eye, Zap } from 'lucide-svelte';
+  import { Bell, Check, X, Settings, Eye } from 'lucide-svelte';
   import { goto } from '$app/navigation';
   import { notificationsStore, unreadCount } from '$lib/stores/notifications';
   import NotificationItem from './NotificationItem.svelte';
   import { showToast } from '$lib/stores/toast';
-  import { requestNotificationPermission, hasNotificationPermission, getNotificationPermission, showBrowserNotification } from '$lib/services/browserNotifications';
-  import { notificationsService } from '$lib/services/notifications';
-  import { userStore } from '$lib/stores/user';
+  import { requestNotificationPermission, getNotificationPermission } from '$lib/services/browserNotifications';
   
   const dispatch = createEventDispatcher();
   
@@ -20,7 +18,6 @@
   let loading = false;
   let browserPermission = 'default';
   let requestingPermission = false;
-  let testingNotification = false;
   
   // Bloquear scroll del body cuando el panel está abierto en móvil
   $: if (browser && open) {
@@ -82,38 +79,6 @@
     }
   }
   
-  async function createTestNotification() {
-    if (!$userStore?.id) return;
-    
-    testingNotification = true;
-    try {
-      // Crear notificación en la base de datos
-      await notificationsService.createTestNotification($userStore.id);
-      
-      // Recargar notificaciones
-      await notificationsStore.load();
-      
-      // Si tiene permisos, mostrar también notificación del navegador
-      if (hasNotificationPermission()) {
-        showBrowserNotification('🔔 Notificación de Prueba', {
-          body: '¡Esta es una notificación de prueba! Si ves este mensaje, el sistema de notificaciones está funcionando correctamente.',
-          tag: 'test-notification',
-          icon: '/favicon.png',
-          requireInteraction: true  // Se queda fija hasta que el usuario la cierre
-        });
-      }
-      
-      showToast('Notificación de prueba creada', 'success');
-      
-      // Cambiar a la pestaña "Todas" para ver la nueva notificación
-      activeTab = 'all';
-    } catch (error) {
-      console.error('Error creating test notification:', error);
-      showToast('Error al crear notificación de prueba: ' + (error.message || 'Error desconocido'), 'error');
-    } finally {
-      testingNotification = false;
-    }
-  }
   
   async function markAllAsRead() {
     if ($unreadCount === 0) return;
@@ -277,46 +242,34 @@
       {:else}
         <div class="p-8 text-center">
           <Bell size={48} class="text-gray-400 mx-auto mb-3 opacity-50" />
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            {activeTab === 'unread' ? 'No hay notificaciones no leídas' : 'No hay notificaciones'}
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+            {activeTab === 'unread' ? 'No hay notificaciones no leídas' : 'No hay notificaciones aún'}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-500 mb-6">
+            {activeTab === 'unread' 
+              ? 'Todas tus notificaciones están al día' 
+              : 'Las notificaciones aparecerán aquí cuando haya actualizaciones importantes'}
           </p>
           
-          <!-- Botones de acción -->
-          <div class="flex flex-col gap-2">
+          <!-- Botón para solicitar permisos del navegador (solo si no hay notificaciones y no tiene permisos) -->
+          {#if browser && browserPermission !== 'granted' && activeTab === 'all'}
             <button
-              on:click={createTestNotification}
-              disabled={testingNotification}
-              class="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2 shadow-lg"
+              on:click={requestBrowserPermission}
+              disabled={requestingPermission}
+              class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] mx-auto"
             >
-              {#if testingNotification}
-                <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                <span>Creando...</span>
+              {#if requestingPermission}
+                <span class="flex items-center justify-center gap-2">
+                  <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  Solicitando permisos...
+                </span>
+              {:else if browserPermission === 'denied'}
+                <span>Permisos denegados</span>
               {:else}
-                <Zap size={16} />
-                <span>Crear Notificación de Prueba</span>
+                <span>Activar notificaciones del navegador</span>
               {/if}
             </button>
-            
-            <!-- Botón para solicitar permisos del navegador -->
-            {#if browser && browserPermission !== 'granted'}
-              <button
-                on:click={requestBrowserPermission}
-                disabled={requestingPermission}
-                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-              >
-                {#if requestingPermission}
-                  <span class="flex items-center justify-center gap-2">
-                    <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    Solicitando permisos...
-                  </span>
-                {:else if browserPermission === 'denied'}
-                  <span>Permisos denegados (activa en configuración del navegador)</span>
-                {:else}
-                  <span>Activar notificaciones del navegador</span>
-                {/if}
-              </button>
-            {/if}
-          </div>
+          {/if}
         </div>
       {/if}
     </div>

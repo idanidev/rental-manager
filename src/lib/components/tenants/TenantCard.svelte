@@ -41,7 +41,12 @@
   
   function handleGenerateContract(e) {
     e.stopPropagation();
-    dispatch('generate-contract', { tenant, property, room });
+    dispatch('generate-contract', { tenant, property, room, isRenewal: isExpired });
+  }
+  
+  function handleRenewContract(e) {
+    e.stopPropagation();
+    dispatch('renew-contract', { tenant, property, room });
   }
   
   function handleEdit(e) {
@@ -147,13 +152,31 @@
       <Edit size={16} />
       Editar Inquilino
     </button>
-    <button
-      on:click={handleGenerateContract}
-      class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium"
-    >
-      <FileText size={16} />
-      Generar Contrato
-    </button>
+    {#if isExpired && tenant.contract_end_date}
+      <button
+        on:click={handleRenewContract}
+        class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg transition-colors text-sm font-medium shadow-md"
+      >
+        <FileText size={16} />
+        Renovar Contrato
+      </button>
+    {:else if !tenant.contract_start_date || !tenant.contract_end_date}
+      <button
+        on:click={handleGenerateContract}
+        class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium"
+      >
+        <FileText size={16} />
+        Generar Contrato
+      </button>
+    {:else}
+      <button
+        on:click={handleGenerateContract}
+        class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm font-medium"
+      >
+        <FileText size={16} />
+        Ver/Regenerar Contrato
+      </button>
+    {/if}
   </div>
 </GlassCard>
 

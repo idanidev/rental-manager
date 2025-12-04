@@ -4,18 +4,22 @@ import { supabase } from '../services/supabase';
 
 function createPropertiesStore() {
   const { subscribe, set, update } = writable([]);
+  const loading = writable(false);
   let realtimeSubscription = null;
 
   return {
     subscribe,
     set,
     update,
+    loading: { subscribe: loading.subscribe },
     async load(userId) {
       if (!userId) {
         set([]);
+        loading.set(false);
         return;
       }
       
+      loading.set(true);
       try {
         const properties = await propertiesService.getUserProperties(userId);
         set(properties);
@@ -25,6 +29,8 @@ function createPropertiesStore() {
       } catch (error) {
         console.error('Error loading properties:', error);
         set([]);
+      } finally {
+        loading.set(false);
       }
     },
     
@@ -96,6 +102,9 @@ function createPropertiesStore() {
 }
 
 export const propertiesStore = createPropertiesStore();
+
+// Exportar el store de loading para acceso directo
+export const propertiesLoading = propertiesStore.loading;
 
 // Store para la propiedad seleccionada actualmente
 export const selectedProperty = writable(null);
