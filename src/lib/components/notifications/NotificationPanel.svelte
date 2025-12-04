@@ -18,43 +18,53 @@
   let loading = false;
   let browserPermission = 'default';
   let requestingPermission = false;
+  let savedScrollY = 0;
   
-  // Bloquear scroll del body cuando el panel está abierto en móvil
-  $: if (browser && open) {
-    if (window.innerWidth < 640) {
+  // Manejar el bloqueo de scroll (solo en navegador)
+  function handleScrollLock() {
+    if (!browser || typeof window === 'undefined' || typeof document === 'undefined') return;
+    
+    if (open && window.innerWidth < 640) {
       // Móvil: bloquear scroll
-      const scrollY = window.scrollY;
+      savedScrollY = window.scrollY;
       document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
+      document.body.style.top = `-${savedScrollY}px`;
       document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
+    } else if (!open && savedScrollY > 0) {
+      // Restaurar scroll
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, savedScrollY);
+      savedScrollY = 0;
     }
-  } else if (browser) {
-    // Restaurar scroll
-    const scrollY = document.body.style.top;
-    document.body.style.position = '';
-    document.body.style.top = '';
-    document.body.style.width = '';
-    document.body.style.overflow = '';
-    if (scrollY) {
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
-    }
+  }
+  
+  // Reaccionar a cambios en `open`
+  $: if (browser) {
+    handleScrollLock();
   }
   
   onMount(() => {
     if (browser) {
       browserPermission = getNotificationPermission();
       notificationsStore.load();
+      handleScrollLock();
     }
   });
   
   onDestroy(() => {
     // Asegurar que se restaure el scroll al destruir el componente
-    if (browser) {
+    if (browser && typeof document !== 'undefined') {
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
       document.body.style.overflow = '';
+      if (savedScrollY > 0) {
+        window.scrollTo(0, savedScrollY);
+      }
     }
   });
   

@@ -2,7 +2,14 @@
   import { onMount } from 'svelte';
   import { Plus, Home as HomeIcon, DoorOpen, Users, Euro, TrendingUp, MapPin } from 'lucide-svelte';
   import { goto } from '$app/navigation';
-  import { propertiesStore } from '$lib/stores/properties';
+  import { 
+    propertiesStore, 
+    propertiesLoading,
+    totalProperties, 
+    totalRooms, 
+    occupiedRooms, 
+    occupancyRate 
+  } from '$lib/stores/properties';
   import { userStore } from '$lib/stores/user';
   import PropertyForm from '$lib/components/properties/PropertyForm.svelte';
   import Modal from '$lib/components/ui/Modal.svelte';
@@ -10,8 +17,6 @@
   import GlassCard from '$lib/components/ui/GlassCard.svelte';
   import MyInvitations from '$lib/components/invitations/MyInvitations.svelte';
   import PropertyCard from '$lib/components/properties/PropertyCard.svelte';
-  
-  import { totalProperties, totalRooms, occupiedRooms, occupancyRate, propertiesStore, propertiesLoading } from '$lib/stores/properties';
   import LoadingSpinner from '$lib/components/ui/LoadingSpinner.svelte';
   
   let showCreateModal = false;

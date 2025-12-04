@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { onMount, onDestroy } from 'svelte';
+  import { browser } from '$app/environment';
   import { 
     Calendar, AlertCircle, FileText, UserPlus, DollarSign, 
     TrendingUp, Home, X, Check, Clock, Bell, Trash2
@@ -68,7 +68,7 @@
   let isMouseDragging = false;
   
   function handleMouseDown(e) {
-    if (isDeleting) return;
+    if (isDeleting || !browser) return;
     mouseDownX = e.clientX;
     startX = e.clientX;
     isMouseDragging = false;
@@ -97,12 +97,16 @@
       }
       isSwiping = false;
       isMouseDragging = false;
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      if (browser && typeof document !== 'undefined') {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      }
     };
     
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    if (browser && typeof document !== 'undefined') {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
   }
   
   function updateTransform() {
