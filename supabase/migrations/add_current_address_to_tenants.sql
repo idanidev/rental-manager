@@ -10,3 +10,4 @@ COMMENT ON COLUMN tenants.current_address IS 'Domicilio actual del inquilino (us
 
 
 
+

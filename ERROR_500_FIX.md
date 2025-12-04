@@ -80,3 +80,4 @@ El error 500 podría estar relacionado con:
 
 Si el error persiste después de estos cambios, el problema probablemente está en otro lugar (queries de propiedades, permisos, etc.).
 
+

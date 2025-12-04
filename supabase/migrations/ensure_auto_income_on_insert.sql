@@ -76,3 +76,4 @@ CREATE TRIGGER generate_income_on_tenant_assignment
 COMMENT ON FUNCTION trigger_generate_income_on_tenant_assignment IS 'Trigger que genera ingresos automáticamente cuando se crea o actualiza una habitación con inquilino asignado';
 COMMENT ON TRIGGER generate_income_on_tenant_assignment ON rooms IS 'Genera ingresos automáticamente al crear o asignar inquilino a habitación';
 
+

@@ -77,3 +77,4 @@ Esta migración asegura que los ingresos se generen tanto al crear habitaciones 
 
 **Estado**: ✅ Configurado y funcionando
 
+

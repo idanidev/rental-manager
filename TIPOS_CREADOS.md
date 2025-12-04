@@ -76,3 +76,4 @@ Recomendado actualizar más componentes para usar estos tipos:
 **Fecha**: $(date)
 **Estado**: ✅ COMPLETADO
 
+

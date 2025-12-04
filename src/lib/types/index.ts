@@ -201,3 +201,4 @@ export interface TenantFormData {
 export type ClickHandler = (e: MouseEvent | KeyboardEvent) => void;
 export type NullableClickHandler = ClickHandler | null | undefined;
 
+

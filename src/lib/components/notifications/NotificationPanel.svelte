@@ -98,7 +98,8 @@
         showBrowserNotification('🔔 Notificación de Prueba', {
           body: '¡Esta es una notificación de prueba! Si ves este mensaje, el sistema de notificaciones está funcionando correctamente.',
           tag: 'test-notification',
-          icon: '/favicon.png'
+          icon: '/favicon.png',
+          requireInteraction: true  // Se queda fija hasta que el usuario la cierre
         });
       }
       

@@ -84,3 +84,4 @@ vi.mock('$env/static/public', () => ({
 // Mock de Supabase Client (se puede sobreescribir en tests específicos)
 global.mockSupabase = null;
 
+

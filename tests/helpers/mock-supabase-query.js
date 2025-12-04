@@ -60,3 +60,4 @@ export function createSupabaseResponse(data, error = null) {
   return { data, error };
 }
 
+

@@ -176,3 +176,4 @@ vi.mock('$lib/services/supabase', () => ({
 4. ⏳ Fase 4: Tests E2E
 5. ⏳ Fase 5: CI/CD
 
+
