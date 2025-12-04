@@ -200,20 +200,48 @@ export const pdfService = {
       // Si es base64 ya, devolverlo
       if (url.startsWith('data:')) return url;
       
-      const response = await fetch(url, { mode: 'cors' });
-      if (!response.ok) {
-        console.warn('Error fetching image:', response.status);
+      // Intentar cargar la imagen con diferentes estrategias
+      try {
+        const response = await fetch(url, { 
+          mode: 'cors',
+          credentials: 'omit'
+        });
+        
+        if (!response.ok) {
+          console.warn(`Error fetching image (${response.status}):`, url);
+          return null;
+        }
+        
+        const blob = await response.blob();
+        
+        // Validar que sea una imagen
+        if (!blob.type.startsWith('image/')) {
+          console.warn('URL no es una imagen:', url);
+          return null;
+        }
+        
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (reader.result) {
+              resolve(reader.result);
+            } else {
+              resolve(null);
+            }
+          };
+          reader.onerror = () => {
+            console.warn('Error al leer la imagen:', url);
+            resolve(null); // Resolver con null en lugar de rechazar
+          };
+          reader.readAsDataURL(blob);
+        });
+      } catch (fetchError) {
+        console.warn('Error al hacer fetch de la imagen:', url, fetchError);
         return null;
       }
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
     } catch (error) {
-      console.warn('Error loading image:', error);
+      // Capturar cualquier error inesperado
+      console.warn('Error general al cargar imagen:', url, error);
       return null;
     }
   },
@@ -313,48 +341,69 @@ export const pdfService = {
           const imgData = await this.loadImageAsBase64(imageUrl);
           
           if (imgData) {
-            // Obtener dimensiones reales de la imagen
-            const img = new Image();
-            await new Promise((resolve, reject) => {
-              img.onload = resolve;
-              img.onerror = reject;
-              img.src = imgData;
-            });
-            
-            let finalImgWidth = img.width;
-            let finalImgHeight = img.height;
-            
-            // Redimensionar manteniendo proporción
-            const aspectRatio = finalImgHeight / finalImgWidth;
-            finalImgWidth = imgWidth;
-            finalImgHeight = imgWidth * aspectRatio;
-            
-            // Ajustar si es muy alta
-            if (finalImgHeight > maxImgHeight) {
-              finalImgWidth = maxImgHeight / aspectRatio;
-              finalImgHeight = maxImgHeight;
-            }
-            
-            // Calcular posición X (centrada en su espacio)
-            const imgX = margin + (currentCol * (imgWidth + imgGap)) + ((imgWidth - finalImgWidth) / 2);
-            const imgY = yPosition;
-            
-            // Guardar la altura máxima de esta fila
-            if (finalImgHeight > rowHeight) {
-              rowHeight = finalImgHeight;
-            }
-            
-            // Agregar imagen
-            doc.addImage(imgData, 'JPEG', imgX, imgY, finalImgWidth, finalImgHeight, undefined, 'FAST');
-            
-            // Avanzar columna
-            currentCol++;
-            
-            // Si completamos una fila, avanzar a la siguiente
-            if (currentCol >= photosPerRow) {
-              currentCol = 0;
-              yPosition += rowHeight + imgGap;
-              rowHeight = 0;
+            try {
+              // Obtener dimensiones reales de la imagen
+              const img = new Image();
+              await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                  reject(new Error('Timeout loading image'));
+                }, 10000); // 10 segundos de timeout
+                
+                img.onload = () => {
+                  clearTimeout(timeout);
+                  resolve(null);
+                };
+                img.onerror = (err) => {
+                  clearTimeout(timeout);
+                  reject(err);
+                };
+                img.src = imgData;
+              });
+              
+              let finalImgWidth = img.width;
+              let finalImgHeight = img.height;
+              
+              // Validar dimensiones
+              if (!finalImgWidth || !finalImgHeight || finalImgWidth <= 0 || finalImgHeight <= 0) {
+                throw new Error('Invalid image dimensions');
+              }
+              
+              // Redimensionar manteniendo proporción
+              const aspectRatio = finalImgHeight / finalImgWidth;
+              finalImgWidth = imgWidth;
+              finalImgHeight = imgWidth * aspectRatio;
+              
+              // Ajustar si es muy alta
+              if (finalImgHeight > maxImgHeight) {
+                finalImgWidth = maxImgHeight / aspectRatio;
+                finalImgHeight = maxImgHeight;
+              }
+              
+              // Calcular posición X (centrada en su espacio)
+              const imgX = margin + (currentCol * (imgWidth + imgGap)) + ((imgWidth - finalImgWidth) / 2);
+              const imgY = yPosition;
+              
+              // Guardar la altura máxima de esta fila
+              if (finalImgHeight > rowHeight) {
+                rowHeight = finalImgHeight;
+              }
+              
+              // Agregar imagen
+              doc.addImage(imgData, 'JPEG', imgX, imgY, finalImgWidth, finalImgHeight, undefined, 'FAST');
+              
+              // Avanzar columna
+              currentCol++;
+              
+              // Si completamos una fila, avanzar a la siguiente
+              if (currentCol >= photosPerRow) {
+                currentCol = 0;
+                yPosition += rowHeight + imgGap;
+                rowHeight = 0;
+              }
+            } catch (imgError) {
+              // Si falla cargar la imagen, simplemente continuar con la siguiente
+              console.warn(`Error procesando imagen ${i + 1}:`, imgError?.message || imgError);
+              // No agregar esta imagen, continuar con la siguiente
             }
           }
         } catch (err) {
@@ -436,24 +485,47 @@ export const pdfService = {
             const imgData = await this.loadImageAsBase64(photoUrl);
             
             if (imgData) {
-              const imgX = margin + 5 + (currentCol * (imgSize + 10));
-              const imgY = yPosition;
-              
-              doc.addImage(imgData, 'JPEG', imgX, imgY, imgSize, imgSize, undefined, 'FAST');
-              
-              // Nombre de la zona debajo de la foto
-              doc.setFontSize(8);
-              doc.text(room.name, imgX + imgSize / 2, imgY + imgSize + 5, { align: 'center', maxWidth: imgSize });
-              
-              currentCol++;
-              if (currentCol >= photosPerRow) {
-                currentCol = 0;
-                currentRow++;
-                yPosition += imgSize + 20;
+              try {
+                // Validar que la imagen se pueda cargar
+                const img = new Image();
+                await new Promise((resolve, reject) => {
+                  const timeout = setTimeout(() => {
+                    reject(new Error('Timeout'));
+                  }, 5000);
+                  img.onload = () => {
+                    clearTimeout(timeout);
+                    resolve(null);
+                  };
+                  img.onerror = () => {
+                    clearTimeout(timeout);
+                    reject(new Error('Image load failed'));
+                  };
+                  img.src = imgData;
+                });
+                
+                const imgX = margin + 5 + (currentCol * (imgSize + 10));
+                const imgY = yPosition;
+                
+                doc.addImage(imgData, 'JPEG', imgX, imgY, imgSize, imgSize, undefined, 'FAST');
+                
+                // Nombre de la zona debajo de la foto
+                doc.setFontSize(8);
+                doc.text(room.name, imgX + imgSize / 2, imgY + imgSize + 5, { align: 'center', maxWidth: imgSize });
+                
+                currentCol++;
+                if (currentCol >= photosPerRow) {
+                  currentCol = 0;
+                  currentRow++;
+                  yPosition += imgSize + 20;
+                }
+              } catch (imgError) {
+                console.warn(`Error procesando imagen de zona común "${room.name}":`, imgError?.message || imgError);
+                // Continuar sin esta imagen
               }
             }
           } catch (err) {
-            console.warn('Error loading common room photo:', err);
+            console.warn(`Error cargando foto de zona común "${room.name}":`, err?.message || err);
+            // Continuar sin esta imagen
           }
         }
         
