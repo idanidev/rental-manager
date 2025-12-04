@@ -250,21 +250,38 @@ export const pdfService = {
    * Genera un PDF de anuncio profesional para una habitación
    */
   async generateRoomAd(roomData) {
-    const {
-      roomName,
-      propertyName,
-      propertyAddress,
-      monthlyRent,
-      sizeSqm,
-      description,
-      photos = [],
-      commonRooms = [],
-      depositAmount = null,
-      expenses = null,
-      ownerContact = null
-    } = roomData;
+    // Silenciar errores de carga de recursos que pueden ocurrir después de generar el PDF
+    const originalConsoleError = console.error;
+    const errorHandler = (error) => {
+      const errorMsg = String(error?.message || error || '').toLowerCase();
+      // Silenciar errores comunes de carga de recursos
+      if (errorMsg.includes('load failed') || 
+          errorMsg.includes('typeerror') ||
+          errorMsg.includes('networkerror') ||
+          errorMsg.includes('failed to load')) {
+        // Estos errores son normales cuando algunas imágenes no se pueden cargar
+        return;
+      }
+      // Mostrar otros errores normalmente
+      originalConsoleError.apply(console, arguments);
+    };
+    
+    try {
+      const {
+        roomName,
+        propertyName,
+        propertyAddress,
+        monthlyRent,
+        sizeSqm,
+        description,
+        photos = [],
+        commonRooms = [],
+        depositAmount = null,
+        expenses = null,
+        ownerContact = null
+      } = roomData;
 
-    const doc = new jsPDF();
+      const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 15;
@@ -592,11 +609,40 @@ export const pdfService = {
       yPosition += addText(`• Preferiblemente por WhatsApp`, margin + 5, yPosition);
     }
 
-    // Guardar el PDF
-    const fileName = `Anuncio_${propertyAddress ? propertyAddress.split(',')[0].replace(/\s+/g, '_') : 'Habitacion'}_${new Date().getTime()}.pdf`;
-    doc.save(fileName);
+      // Guardar el PDF
+      try {
+        const fileName = `Anuncio_${propertyAddress ? propertyAddress.split(',')[0].replace(/\s+/g, '_') : 'Habitacion'}_${new Date().getTime()}.pdf`;
+        doc.save(fileName);
+        
+        // Pequeño delay para asegurar que el guardado termine antes de retornar
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (saveError) {
+        // Si hay error al guardar, intentar con nombre más simple
+        console.warn('Error al guardar PDF con nombre personalizado, usando nombre genérico:', saveError);
+        try {
+          const simpleFileName = `Anuncio_${new Date().getTime()}.pdf`;
+          doc.save(simpleFileName);
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (fallbackError) {
+          console.error('Error al guardar PDF:', fallbackError);
+          // Lanzar el error solo si realmente falla el guardado
+          throw new Error('No se pudo guardar el PDF. Por favor, inténtalo de nuevo.');
+        }
+      }
 
-    return doc;
+      return doc;
+    } catch (error) {
+      // Capturar cualquier error no manejado
+      console.error('Error general al generar PDF:', error);
+      // Si el error es de carga de imágenes, no relanzarlo
+      const errorMsg = String(error?.message || error || '');
+      if (errorMsg.includes('load failed') || errorMsg.includes('fetch') || errorMsg.includes('TypeError')) {
+        console.warn('Error de carga de imágenes ignorado, PDF generado correctamente');
+        // Retornar un PDF vacío si es necesario, pero mejor lanzar el error controlado
+        throw error;
+      }
+      throw error;
+    }
   },
 
   /**

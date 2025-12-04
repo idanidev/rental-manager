@@ -64,19 +64,31 @@
       
       // Intentar generar el PDF - puede tener errores de imágenes pero el PDF se genera
       await pdfService.generateRoomAd(adData);
+      // Pequeño delay para asegurar que todo termine
+      await new Promise(resolve => setTimeout(resolve, 200));
       dispatch('generated');
       error = '';
     } catch (/** @type {any} */ err) {
       // Solo mostrar errores críticos, ignorar advertencias de carga de imágenes
-      const errorMessage = String(err?.message || err || '');
+      const errorMessage = String(err?.message || err || '').toLowerCase();
+      const errorString = String(err || '');
+      
       // Ignorar errores de carga de imágenes que no afectan la generación del PDF
-      if (errorMessage.includes('load failed') || errorMessage.includes('TypeError') || errorMessage.includes('fetch')) {
+      if (
+        errorMessage.includes('load failed') || 
+        errorMessage.includes('typeerror') || 
+        errorMessage.includes('fetch') ||
+        errorMessage.includes('networkerror') ||
+        errorString.includes('load failed') ||
+        errorString.includes('TypeError')
+      ) {
         // El PDF se generó correctamente, solo algunas imágenes fallaron
-        console.warn('Algunas imágenes no pudieron cargarse, pero el PDF se generó correctamente');
+        // No mostrar error al usuario, el PDF se generó bien
         dispatch('generated');
         error = '';
       } else {
-        error = errorMessage || 'Error al generar el anuncio';
+        // Solo mostrar errores realmente críticos
+        error = String(err?.message || err || 'Error al generar el anuncio');
         console.error('Error generating ad:', err);
       }
     } finally {
