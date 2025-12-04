@@ -156,3 +156,4 @@ COMMENT ON FUNCTION record_contract_notification IS 'Registra que se envió una 
 
 
 
+

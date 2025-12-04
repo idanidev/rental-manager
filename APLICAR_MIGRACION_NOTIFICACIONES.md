@@ -129,3 +129,4 @@ Una vez aplicada la migración, deberías ver:
 ¡Listo! El sistema de notificaciones está completamente funcional. 🎉
 
 
+

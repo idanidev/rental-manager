@@ -77,3 +77,4 @@ Recomendado actualizar más componentes para usar estos tipos:
 **Estado**: ✅ COMPLETADO
 
 
+

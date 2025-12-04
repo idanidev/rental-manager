@@ -179,3 +179,4 @@ COMMENT ON FUNCTION generate_monthly_income_for_contract IS 'Genera automáticam
 
 
 
+

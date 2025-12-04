@@ -13,3 +13,4 @@ COMMENT ON COLUMN tenants.contract_months IS 'Duración del contrato en meses (p
 
 
 
+

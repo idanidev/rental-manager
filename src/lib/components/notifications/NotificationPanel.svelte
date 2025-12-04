@@ -47,22 +47,39 @@
     handleScrollLock();
   }
   
+  // Cerrar con Escape
+  function handleKeydown(e) {
+    if (e.key === 'Escape' && open) {
+      dispatch('close');
+    }
+  }
+  
   onMount(() => {
     if (browser) {
       browserPermission = getNotificationPermission();
       notificationsStore.load();
       handleScrollLock();
+      
+      // Escuchar tecla Escape
+      if (typeof window !== 'undefined') {
+        window.addEventListener('keydown', handleKeydown);
+      }
     }
   });
   
   onDestroy(() => {
+    // Remover listener de Escape
+    if (browser && typeof window !== 'undefined') {
+      window.removeEventListener('keydown', handleKeydown);
+    }
+    
     // Asegurar que se restaure el scroll al destruir el componente
     if (browser && typeof document !== 'undefined') {
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
       document.body.style.overflow = '';
-      if (savedScrollY > 0) {
+      if (savedScrollY > 0 && typeof window !== 'undefined') {
         window.scrollTo(0, savedScrollY);
       }
     }
@@ -122,9 +139,9 @@
 </script>
 
 {#if open}
-  <!-- Overlay para móvil (fullscreen) -->
+  <!-- Overlay (móvil y desktop) -->
   <div 
-    class="fixed inset-0 bg-black/60 dark:bg-black/80 z-[9999] sm:hidden"
+    class="fixed inset-0 bg-black/60 dark:bg-black/80 z-[9999] sm:bg-black/20"
     on:click={() => dispatch('close')}
     role="button"
     aria-label="Cerrar panel"
@@ -146,12 +163,15 @@
     aria-modal="true"
     aria-label="Panel de notificaciones"
     transition:fade={{ duration: 200 }}
+    on:click|stopPropagation
   >
     <!-- Header -->
-    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20">
       <div class="flex items-center gap-2">
-        <Bell size={20} class="text-purple-500 dark:text-purple-400" />
-        <h3 class="font-bold text-gray-900 dark:text-gray-100 text-lg">Notificaciones</h3>
+        <div class="p-2 gradient-primary rounded-lg">
+          <Bell size={20} class="text-white" />
+        </div>
+        <h3 class="font-bold text-gray-900 dark:text-gray-100 text-lg gradient-text">Notificaciones</h3>
         {#if $unreadCount > 0}
           <span class="px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
             {$unreadCount}
@@ -160,34 +180,40 @@
       </div>
       <button
         on:click={() => dispatch('close')}
-        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+        class="p-2 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label="Cerrar"
       >
-        <X size={20} class="text-gray-600 dark:text-gray-400" />
+        <X size={20} class="text-orange-600 dark:text-orange-400" />
       </button>
     </div>
     
     <!-- Tabs -->
-    <div class="flex border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+    <div class="flex border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-800/50">
       <button
         on:click={() => activeTab = 'all'}
-        class="flex-1 px-4 py-3 text-sm font-semibold transition-colors min-h-[44px]
+        class="flex-1 px-4 py-3 text-sm font-semibold transition-colors min-h-[44px] relative
           {activeTab === 'all'
-            ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}"
+            ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-900'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
       >
         Todas
+        {#if activeTab === 'all'}
+          <div class="absolute bottom-0 left-0 right-0 h-0.5 gradient-primary"></div>
+        {/if}
       </button>
       <button
         on:click={() => activeTab = 'unread'}
         class="flex-1 px-4 py-3 text-sm font-semibold transition-colors relative min-h-[44px]
           {activeTab === 'unread'
-            ? 'text-purple-600 dark:text-purple-400 border-b-2 border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}"
+            ? 'text-orange-600 dark:text-orange-400 bg-white dark:bg-gray-900'
+            : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-800/50'}"
       >
         No leídas
         {#if $unreadCount > 0 && activeTab !== 'unread'}
           <span class="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full"></span>
+        {/if}
+        {#if activeTab === 'unread'}
+          <div class="absolute bottom-0 left-0 right-0 h-0.5 gradient-primary"></div>
         {/if}
       </button>
     </div>
@@ -198,7 +224,7 @@
         <button
           on:click={markAllAsRead}
           disabled={loading || $unreadCount === 0}
-          class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+          class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
         >
           <Check size={16} />
           <span class="hidden sm:inline">Marcar todas como leídas</span>
@@ -232,7 +258,7 @@
     <div class="flex-1 overflow-y-auto min-h-0">
       {#if loading && filteredNotifications.length === 0}
         <div class="p-8 text-center">
-          <div class="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent mx-auto mb-2"></div>
+          <div class="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent mx-auto mb-2"></div>
           <p class="text-sm text-gray-500 dark:text-gray-400">Cargando...</p>
         </div>
       {:else if hasNotifications}
@@ -266,7 +292,7 @@
             <button
               on:click={requestBrowserPermission}
               disabled={requestingPermission}
-              class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] mx-auto"
+              class="px-4 py-2 gradient-primary hover:opacity-90 text-white text-sm font-medium rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] mx-auto shadow-md"
             >
               {#if requestingPermission}
                 <span class="flex items-center justify-center gap-2">
@@ -285,23 +311,34 @@
     </div>
     
     <!-- Footer - Siempre visible -->
-    <div class="p-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2 flex-shrink-0">
+    <div class="p-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between gap-2 flex-shrink-0 bg-gray-50 dark:bg-gray-800/30">
       <button
         on:click={goToSettings}
-        class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px]"
+        class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors min-h-[44px]"
       >
         <Settings size={16} />
         <span>Configuración</span>
       </button>
-      {#if hasNotifications}
+      <div class="flex items-center gap-2">
+        {#if hasNotifications}
+          <button
+            on:click={goToHistory}
+            class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors min-h-[44px]"
+          >
+            <Eye size={16} />
+            <span>Ver todo</span>
+          </button>
+        {/if}
+        <!-- Botón de cerrar más visible -->
         <button
-          on:click={goToHistory}
-          class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors min-h-[44px]"
+          on:click={() => dispatch('close')}
+          class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white gradient-primary hover:opacity-90 rounded-lg transition-all min-h-[44px] shadow-md flex-shrink-0"
+          title="Cerrar (Escape)"
         >
-          <Eye size={16} />
-          <span>Ver todo</span>
+          <X size={18} />
+          <span>Cerrar</span>
         </button>
-      {/if}
+      </div>
     </div>
   </div>
 {/if}

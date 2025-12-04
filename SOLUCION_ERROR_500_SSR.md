@@ -44,3 +44,4 @@ Si el error 500 persiste:
 El código ahora está protegido para SSR y no debería romperse incluso si las tablas de notificaciones no existen.
 
 
+

@@ -169,3 +169,4 @@ npm run test:coverage
 **Estado**: ✅ LISTO PARA CONTINUAR CON FASE 2
 
 
+

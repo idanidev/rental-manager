@@ -280,7 +280,7 @@
           {notification.title}
         </h4>
         {#if !notification.read}
-          <span class="flex-shrink-0 w-2 h-2 bg-purple-500 rounded-full mt-1"></span>
+          <span class="flex-shrink-0 w-2 h-2 bg-orange-500 rounded-full mt-1"></span>
         {/if}
       </div>
       

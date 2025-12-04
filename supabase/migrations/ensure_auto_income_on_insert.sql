@@ -77,3 +77,4 @@ COMMENT ON FUNCTION trigger_generate_income_on_tenant_assignment IS 'Trigger que
 COMMENT ON TRIGGER generate_income_on_tenant_assignment ON rooms IS 'Genera ingresos automáticamente al crear o asignar inquilino a habitación';
 
 
+
