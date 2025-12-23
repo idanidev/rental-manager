@@ -28,3 +28,29 @@ scripts/*.md
 # Documentación de desarrollo
 *-SETUP.md
 CREATE_*.md
+
+# Archivos de plantillas Word (mantener solo en static/)
+/*.docx
+/*.doc
+
+# Backups y archivos temporales de editores
+*.bak
+*.backup
+*.orig
+*~
+\#*\#
+.#*
+
+# Archivos de sistema adicionales
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Archivos de debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage de tests
+coverage/
+.nyc_output/

@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { userStore } from '$lib/stores/user';
   import { onMount } from 'svelte';
+  import { slide } from 'svelte/transition';
   import Button from '../ui/Button.svelte';
   
   let email = '';
@@ -20,6 +21,15 @@
   const STORAGE_KEY_LAST_EMAIL = 'rental_manager_last_email';
   const STORAGE_KEY_SAVED_EMAILS = 'rental_manager_saved_emails';
   const MAX_SAVED_EMAILS = 5;
+
+  // Generar posiciones de partículas de forma estática
+  const particles = Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    delay: i * 0.1,
+    duration: 15 + (i % 10),
+    x: Math.random() * 100,
+    y: Math.random() * 100
+  }));
 
   // Cargar emails guardados al montar
   onMount(() => {
@@ -149,14 +159,53 @@
         // Guardar email después de registro
         saveEmail(email);
         
-        success = '¡Cuenta creada! Revisa tu email para confirmar tu cuenta.';
-        setTimeout(() => {
-          mode = 'login';
-          success = '';
-        }, 3000);
+        // Intentar iniciar sesión automáticamente después del registro
+        try {
+          await authService.signIn(email, password);
+          
+          // Esperar a que el userStore se actualice
+          await userStore.refresh();
+          
+          // Navegar al dashboard - el layout cargará las propiedades reactivamente
+          goto('/');
+        } catch (signInError) {
+          // Si no puede iniciar sesión automáticamente (p. ej., requiere confirmación de email)
+          const errorMsg = signInError?.message || String(signInError || '');
+          
+          if (errorMsg.includes('Email not confirmed') || errorMsg.includes('email not confirmed')) {
+            success = '¡Cuenta creada! Revisa tu email para confirmar tu cuenta antes de iniciar sesión.';
+            setTimeout(() => {
+              mode = 'login';
+              success = '';
+            }, 5000);
+          } else {
+            // Si hay otro error, mostrar mensaje pero permitir intentar iniciar sesión manualmente
+            success = '¡Cuenta creada! Puedes iniciar sesión ahora.';
+            setTimeout(() => {
+              mode = 'login';
+              success = '';
+              password = ''; // Limpiar contraseña para seguridad
+            }, 3000);
+          }
+        }
       }
     } catch (err) {
-      error = err.message || 'Error al autenticar';
+      const errorMessage = err?.message || err?.error_description || String(err || 'Error al autenticar');
+      
+      // Mejorar mensajes de error comunes
+      if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) {
+        error = 'Error en el servidor al crear la cuenta. Por favor, inténtalo de nuevo o contacta con soporte.';
+      } else if (errorMessage.includes('User already registered') || errorMessage.includes('already registered')) {
+        error = 'Este email ya está registrado. Por favor, inicia sesión.';
+      } else if (errorMessage.includes('Password')) {
+        error = 'La contraseña no cumple los requisitos. Debe tener al menos 6 caracteres.';
+      } else if (errorMessage.includes('Email')) {
+        error = 'El formato del email no es válido.';
+      } else {
+        error = errorMessage;
+      }
+      
+      console.error('Error en autenticación:', err);
     } finally {
       loading = false;
     }
@@ -177,14 +226,33 @@
   }
 </script>
 
-<div class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-orange-50 via-pink-50 to-blue-50">
-  <div class="glass-card max-w-md w-full space-y-6 animate-fade-in">
-    <!-- Logo/Título -->
-    <div class="text-center">
-      <h1 class="text-4xl font-bold gradient-text mb-2">
-        🏠 Rental Manager
+<div class="login-container min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+  <!-- Fondo animado con gradientes -->
+  <div class="animated-background absolute inset-0 -z-10">
+    <div class="gradient-blob blob-1"></div>
+    <div class="gradient-blob blob-2"></div>
+    <div class="gradient-blob blob-3"></div>
+  </div>
+  
+  <!-- Partículas flotantes -->
+  <div class="floating-particles absolute inset-0 -z-10">
+    {#each particles as particle (particle.id)}
+      <div class="particle" style="--delay: {particle.delay}s; --duration: {particle.duration}s; --x: {particle.x}%; --y: {particle.y}%;"></div>
+    {/each}
+  </div>
+  
+  <div class="glass-card-enhanced max-w-md w-full space-y-6 animate-slide-up relative z-10">
+    <!-- Logo/Título con animación -->
+    <div class="text-center animate-fade-in-delayed">
+      <div class="inline-block mb-3 animate-bounce-gentle">
+        <div class="logo-wrapper p-4 rounded-3xl gradient-primary shadow-2xl shadow-orange-500/30">
+          <span class="text-4xl">🏠</span>
+        </div>
+      </div>
+      <h1 class="text-4xl font-bold gradient-text mb-2 animate-text-shimmer">
+        Rental Manager
       </h1>
-      <p class="text-gray-600">
+      <p class="text-gray-600 dark:text-gray-300 text-sm font-medium">
         {mode === 'login' ? 'Inicia sesión en tu cuenta' : 'Crea tu cuenta nueva'}
       </p>
     </div>
@@ -201,7 +269,7 @@
             type="text"
             bind:value={name}
             placeholder="Juan Pérez"
-            class="input-glass"
+            class="input-glass-enhanced"
             required={mode === 'register'}
           />
         </div>
@@ -218,7 +286,7 @@
             type="email"
             bind:value={email}
             placeholder="tu@email.com"
-            class="input-glass pr-10"
+            class="input-glass-enhanced pr-10"
             required
             autocomplete="email"
             list="saved-emails-list"
@@ -300,7 +368,7 @@
             type="password"
             bind:value={password}
             placeholder="••••••••"
-            class="input-glass"
+            class="input-glass-enhanced"
             required
             minlength={mode === 'register' ? 6 : undefined}
             autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
@@ -308,14 +376,29 @@
       </div>
 
       {#if error}
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl text-sm">
-          {error}
+        <div 
+          transition:slide={{ duration: 300 }}
+          class="error-message-modern bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-300 text-red-800 px-4 py-3 rounded-2xl text-sm font-medium shadow-lg shadow-red-500/10 flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>{error}</span>
         </div>
       {/if}
 
       {#if success}
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl text-sm">
-          {success}
+        <div 
+          transition:slide={{ duration: 300 }}
+          class="success-message-modern bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 text-green-800 px-4 py-3 rounded-2xl text-sm font-medium shadow-lg shadow-green-500/10 flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <span>{success}</span>
         </div>
       {/if}
 
@@ -331,13 +414,14 @@
     </form>
 
     <!-- Toggle modo -->
-    <div class="text-center pt-2 border-t border-gray-200/50">
+    <div class="text-center pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
       <button
         type="button"
         on:click={toggleMode}
-        class="text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+        class="toggle-mode-btn text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-all duration-300 hover:scale-105 active:scale-95 inline-flex items-center gap-2"
       >
-        {mode === 'login' ? '¿No tienes cuenta? Regístrate gratis' : '¿Ya tienes cuenta? Inicia sesión'}
+        <span>{mode === 'login' ? '¿No tienes cuenta? Regístrate gratis' : '¿Ya tienes cuenta? Inicia sesión'}</span>
+        <span class="text-lg transition-transform duration-300 {mode === 'login' ? 'rotate-0' : 'rotate-180'}">✨</span>
       </button>
     </div>
     
