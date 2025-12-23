@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { Mail, MapPin, Check, X } from 'lucide-svelte';
   import { userStore } from '$lib/stores/user';
+  import { propertiesStore } from '$lib/stores/properties';
   import { permissionsService } from '$lib/services/permissions';
   import { showToast } from '$lib/stores/toast';
   import GlassCard from '../ui/GlassCard.svelte';
@@ -36,8 +37,10 @@
       showToast(`Acceso aceptado a ${invitation.property?.name}`, 'success');
       await loadInvitations();
       
-      // Recargar la página para actualizar propiedades
-      setTimeout(() => window.location.reload(), 1000);
+      // Recargar propiedades sin hacer reload completo de la página
+      if ($userStore?.id) {
+        await propertiesStore.load($userStore.id);
+      }
     } catch (err) {
       showToast(err.message || 'Error al aceptar la invitación', 'error');
     }

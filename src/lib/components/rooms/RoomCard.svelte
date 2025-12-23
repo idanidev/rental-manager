@@ -361,9 +361,6 @@
             {room} 
             property={propertyData} 
             {commonRooms}
-            on:generated={() => {
-              dispatch('changed');
-            }}
           />
         </div>
       {/if}
