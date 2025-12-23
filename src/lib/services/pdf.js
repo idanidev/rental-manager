@@ -1,41 +1,602 @@
-// jsPDF se carga dinámicamente para optimizar el bundle inicial
-// import jsPDF from "jspdf";
-
-/**
- * Carga jsPDF de manera lazy (solo cuando se necesita)
- * @returns {Promise<typeof import('jspdf').default>}
- */
-async function loadJsPDF() {
-  const { default: jsPDF } = await import("jspdf");
-  return jsPDF;
-}
+import jsPDF from "jspdf";
 
 /**
  * Servicio profesional para generar PDFs de contratos y anuncios
- * con diseño moderno y atractivo
+ * Diseño moderno estilo inmobiliaria premium
  */
 export const pdfService = {
   // Paleta de colores profesional
   colors: {
-    primary: [41, 98, 255], // Azul vibrante
+    primary: [37, 99, 235], // Azul
     secondary: [99, 102, 241], // Indigo
     accent: [16, 185, 129], // Verde esmeralda
     dark: [17, 24, 39], // Casi negro
     gray: [107, 114, 128], // Gris medio
     lightGray: [243, 244, 246], // Gris muy claro
     white: [255, 255, 255],
-    success: [34, 197, 94],
-    warning: [251, 191, 36],
+    orange: [249, 115, 22], // Naranja para destacar
   },
 
-  // Fuentes y tamaños
-  fonts: {
-    title: 28,
-    subtitle: 18,
-    heading: 14,
-    body: 11,
-    small: 9,
-    tiny: 8,
+  /**
+   * Genera un PDF de anuncio profesional tipo inmobiliaria premium
+   */
+  async generateRoomAd(roomData) {
+    const {
+      roomName,
+      propertyName,
+      propertyAddress,
+      monthlyRent,
+      sizeSqm,
+      description,
+      photos = [],
+      commonRooms = [],
+      depositAmount = null,
+      expenses = null,
+      ownerContact = null,
+    } = roomData;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 15;
+    let yPosition = 0;
+
+    // ============================================
+    // PÁGINA 1: Hero + Info Principal
+    // ============================================
+
+    // Intentar cargar imagen hero
+    let heroHeight = 95;
+    let hasHeroImage = false;
+
+    if (photos.length > 0) {
+      try {
+        const mainPhoto =
+          typeof photos[0] === "string"
+            ? photos[0]
+            : photos[0].url || photos[0];
+        const imgData = await this.loadImageAsBase64(mainPhoto);
+
+        if (imgData) {
+          const img = await this._loadImage(imgData);
+          const imgAspect = img.width / img.height;
+
+          // Calcular dimensiones para cubrir el ancho manteniendo proporción
+          let imgWidth = pageWidth;
+          let imgHeight = pageWidth / imgAspect;
+
+          // Limitar altura máxima
+          if (imgHeight > 110) {
+            imgHeight = 110;
+            imgWidth = imgHeight * imgAspect;
+          }
+          if (imgHeight < 80) {
+            imgHeight = 80;
+          }
+
+          heroHeight = Math.min(imgHeight, 110);
+
+          // Centrar imagen si es más ancha
+          const imgX = (pageWidth - imgWidth) / 2;
+          doc.addImage(
+            imgData,
+            "JPEG",
+            Math.min(0, imgX),
+            0,
+            Math.max(pageWidth, imgWidth),
+            heroHeight,
+            undefined,
+            "FAST"
+          );
+          hasHeroImage = true;
+
+          // Overlay degradado para legibilidad (simulado con rectángulos)
+          for (let i = 0; i < 15; i++) {
+            const alpha = (i / 15) * 0.7;
+            doc.setFillColor(0, 0, 0);
+            doc.setGState(new doc.GState({ opacity: alpha }));
+            doc.rect(0, heroHeight - 45 + i * 3, pageWidth, 3, "F");
+          }
+          doc.setGState(new doc.GState({ opacity: 1 }));
+        }
+      } catch (err) {
+        console.warn("Error loading hero image:", err);
+      }
+    }
+
+    // Si no hay imagen, crear header con color sólido elegante
+    if (!hasHeroImage) {
+      doc.setFillColor(...this.colors.primary);
+      doc.rect(0, 0, pageWidth, heroHeight, "F");
+
+      // Patrón decorativo sutil
+      doc.setFillColor(255, 255, 255);
+      doc.setGState(new doc.GState({ opacity: 0.1 }));
+      for (let i = 0; i < 5; i++) {
+        doc.circle(pageWidth - 20 - i * 25, 30 + i * 10, 40, "F");
+      }
+      doc.setGState(new doc.GState({ opacity: 1 }));
+    }
+
+    // Badge de precio - diseño más compacto y elegante
+    const priceBoxWidth = 65;
+    const priceBoxHeight = 32;
+    const priceBoxX = pageWidth - margin - priceBoxWidth;
+    const priceBoxY = heroHeight - priceBoxHeight - 8;
+
+    // Sombra sutil
+    doc.setFillColor(0, 0, 0);
+    doc.setGState(new doc.GState({ opacity: 0.2 }));
+    doc.roundedRect(
+      priceBoxX + 2,
+      priceBoxY + 2,
+      priceBoxWidth,
+      priceBoxHeight,
+      4,
+      4,
+      "F"
+    );
+    doc.setGState(new doc.GState({ opacity: 1 }));
+
+    doc.setFillColor(...this.colors.accent);
+    doc.roundedRect(
+      priceBoxX,
+      priceBoxY,
+      priceBoxWidth,
+      priceBoxHeight,
+      4,
+      4,
+      "F"
+    );
+
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.white);
+    const priceText = `${parseFloat(monthlyRent || 0).toFixed(0)}\u20AC`;
+    doc.text(priceText, priceBoxX + priceBoxWidth / 2, priceBoxY + 14, {
+      align: "center",
+    });
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text("/mes", priceBoxX + priceBoxWidth / 2, priceBoxY + 24, {
+      align: "center",
+    });
+
+    // Título principal
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.white);
+
+    let titleText = "Habitacion en alquiler";
+    if (propertyName) {
+      const propLower = propertyName.toLowerCase();
+      if (propLower.includes("chalet")) {
+        titleText = "Habitacion en chalet";
+      } else if (propLower.includes("piso")) {
+        titleText = "Habitacion en piso";
+      } else if (propLower.includes("casa")) {
+        titleText = "Habitacion en casa";
+      }
+    }
+    doc.text(titleText, margin, heroHeight - 22);
+
+    // Ubicación bajo el título
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    const locationShort = propertyAddress ? propertyAddress.split(",")[0] : "";
+    doc.text(locationShort, margin, heroHeight - 8);
+
+    yPosition = heroHeight + 12;
+
+    // ============================================
+    // Badges de características (sin emojis problemáticos)
+    // ============================================
+    const features = [];
+    if (sizeSqm) features.push({ text: `${sizeSqm} m2` });
+
+    // Detectar características de zonas comunes
+    const hasPool = commonRooms.some((r) =>
+      r.name?.toLowerCase().includes("piscina")
+    );
+    const hasGarden = commonRooms.some(
+      (r) =>
+        r.name?.toLowerCase().includes("jardin") ||
+        r.name?.toLowerCase().includes("jardín")
+    );
+    const hasParking = commonRooms.some(
+      (r) =>
+        r.name?.toLowerCase().includes("parking") ||
+        r.name?.toLowerCase().includes("garaje")
+    );
+    const hasTerrace = commonRooms.some((r) =>
+      r.name?.toLowerCase().includes("terraza")
+    );
+
+    if (hasPool) features.push({ text: "Piscina" });
+    if (hasGarden) features.push({ text: "Jardin" });
+    if (hasTerrace) features.push({ text: "Terraza" });
+    if (hasParking) features.push({ text: "Parking" });
+    features.push({ text: "WiFi" });
+
+    if (features.length > 0) {
+      let featureX = margin;
+      const badgeHeight = 16;
+      const badgePadding = 10;
+
+      features.forEach((feat, idx) => {
+        if (idx < 5 && featureX < pageWidth - 50) {
+          doc.setFontSize(9);
+          const textWidth = doc.getTextWidth(feat.text);
+          const badgeWidth = textWidth + badgePadding * 2;
+
+          // Badge con borde
+          doc.setFillColor(...this.colors.lightGray);
+          doc.roundedRect(
+            featureX,
+            yPosition,
+            badgeWidth,
+            badgeHeight,
+            8,
+            8,
+            "F"
+          );
+
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(...this.colors.dark);
+          doc.text(feat.text, featureX + badgePadding, yPosition + 11);
+
+          featureX += badgeWidth + 6;
+        }
+      });
+      yPosition += badgeHeight + 12;
+    }
+
+    // ============================================
+    // Descripción
+    // ============================================
+    if (description && description.trim()) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...this.colors.dark);
+      doc.text("Sobre la habitacion", margin, yPosition);
+      yPosition += 7;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...this.colors.gray);
+      const descLines = doc.splitTextToSize(
+        description,
+        pageWidth - 2 * margin
+      );
+      doc.text(descLines.slice(0, 3), margin, yPosition); // Máximo 3 líneas
+      yPosition += Math.min(descLines.length, 3) * 5 + 8;
+    }
+
+    // ============================================
+    // Galería de fotos - MEJORADA
+    // ============================================
+    const roomPhotos = photos.slice(1); // Excluir hero
+
+    if (roomPhotos.length > 0) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...this.colors.dark);
+      doc.text("Galeria", margin, yPosition);
+      yPosition += 8;
+
+      // Calcular grid óptimo según número de fotos
+      const numPhotos = Math.min(roomPhotos.length, 4);
+      const photoGap = 4;
+      const availableWidth = pageWidth - 2 * margin;
+
+      let gridConfig;
+      if (numPhotos === 1) {
+        gridConfig = { cols: 1, photoWidth: availableWidth, photoHeight: 70 };
+      } else if (numPhotos === 2) {
+        gridConfig = {
+          cols: 2,
+          photoWidth: (availableWidth - photoGap) / 2,
+          photoHeight: 55,
+        };
+      } else {
+        gridConfig = {
+          cols: 2,
+          photoWidth: (availableWidth - photoGap) / 2,
+          photoHeight: 45,
+        };
+      }
+
+      let col = 0;
+      let rowY = yPosition;
+
+      for (let i = 0; i < numPhotos; i++) {
+        try {
+          const photoUrl =
+            typeof roomPhotos[i] === "string"
+              ? roomPhotos[i]
+              : roomPhotos[i].url || roomPhotos[i];
+          const imgData = await this.loadImageAsBase64(photoUrl);
+
+          if (imgData) {
+            const photoX = margin + col * (gridConfig.photoWidth + photoGap);
+
+            // Dibujar imagen con clip simulado (bordes redondeados)
+            doc.addImage(
+              imgData,
+              "JPEG",
+              photoX,
+              rowY,
+              gridConfig.photoWidth,
+              gridConfig.photoHeight,
+              undefined,
+              "FAST"
+            );
+
+            // Borde sutil
+            doc.setDrawColor(220, 220, 220);
+            doc.setLineWidth(0.3);
+            doc.roundedRect(
+              photoX,
+              rowY,
+              gridConfig.photoWidth,
+              gridConfig.photoHeight,
+              2,
+              2,
+              "S"
+            );
+
+            col++;
+            if (col >= gridConfig.cols) {
+              col = 0;
+              rowY += gridConfig.photoHeight + photoGap;
+            }
+          }
+        } catch (err) {
+          console.warn("Error loading gallery photo:", err);
+        }
+      }
+
+      // Ajustar yPosition
+      if (col > 0) rowY += gridConfig.photoHeight + photoGap;
+      yPosition = rowY + 5;
+    }
+
+    // ============================================
+    // Zonas comunes - MEJORADAS
+    // ============================================
+    if (commonRooms.length > 0) {
+      // Verificar espacio, si no hay suficiente ir a página 2
+      if (yPosition > pageHeight - 90) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...this.colors.dark);
+      doc.text("Zonas comunes", margin, yPosition);
+      yPosition += 8;
+
+      const roomsWithPhotos = commonRooms.filter(
+        (r) => r.photos && r.photos.length > 0
+      );
+
+      if (roomsWithPhotos.length > 0) {
+        const commonGap = 6;
+        const commonWidth = (pageWidth - 2 * margin - commonGap) / 2;
+        const commonHeight = 55;
+
+        let commonCol = 0;
+        for (const room of roomsWithPhotos.slice(0, 4)) {
+          // Verificar espacio
+          if (yPosition + commonHeight > pageHeight - 70) {
+            doc.addPage();
+            yPosition = margin;
+          }
+
+          try {
+            const photoUrl =
+              typeof room.photos[0] === "string"
+                ? room.photos[0]
+                : room.photos[0].url || room.photos[0];
+            const imgData = await this.loadImageAsBase64(photoUrl);
+
+            if (imgData) {
+              const photoX = margin + commonCol * (commonWidth + commonGap);
+
+              doc.addImage(
+                imgData,
+                "JPEG",
+                photoX,
+                yPosition,
+                commonWidth,
+                commonHeight,
+                undefined,
+                "FAST"
+              );
+
+              // Etiqueta con nombre sobre la foto
+              const labelHeight = 18;
+              doc.setFillColor(0, 0, 0);
+              doc.setGState(new doc.GState({ opacity: 0.65 }));
+              doc.rect(
+                photoX,
+                yPosition + commonHeight - labelHeight,
+                commonWidth,
+                labelHeight,
+                "F"
+              );
+              doc.setGState(new doc.GState({ opacity: 1 }));
+
+              doc.setFontSize(10);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(...this.colors.white);
+              doc.text(
+                room.name || "Zona comun",
+                photoX + 6,
+                yPosition + commonHeight - 6
+              );
+
+              commonCol++;
+              if (commonCol >= 2) {
+                commonCol = 0;
+                yPosition += commonHeight + commonGap;
+              }
+            }
+          } catch (err) {
+            console.warn("Error loading common room photo:", err);
+          }
+        }
+
+        if (commonCol > 0) {
+          yPosition += commonHeight + commonGap;
+        }
+      } else {
+        // Lista simple si no hay fotos
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...this.colors.gray);
+        const roomNames = commonRooms
+          .map((r) => r.name)
+          .filter(Boolean)
+          .join("  |  ");
+        doc.text(roomNames, margin, yPosition);
+        yPosition += 8;
+      }
+
+      yPosition += 8;
+    }
+
+    // ============================================
+    // Box de información - COMPACTO
+    // ============================================
+    // Asegurar que está en la parte inferior o en nueva página
+    const infoBoxHeight = 50;
+    if (yPosition > pageHeight - infoBoxHeight - 50) {
+      doc.addPage();
+      yPosition = margin;
+    }
+
+    // Fondo del box
+    doc.setFillColor(...this.colors.lightGray);
+    doc.roundedRect(
+      margin,
+      yPosition,
+      pageWidth - 2 * margin,
+      infoBoxHeight,
+      4,
+      4,
+      "F"
+    );
+
+    // Línea decorativa superior
+    doc.setFillColor(...this.colors.primary);
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, 3, "F");
+
+    const infoY = yPosition + 15;
+    const colWidth = (pageWidth - 2 * margin) / 3;
+
+    // Columna 1: Alquiler
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.gray);
+    doc.text("ALQUILER MENSUAL", margin + 10, infoY);
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.primary);
+    doc.text(
+      `${parseFloat(monthlyRent || 0).toFixed(0)}\u20AC`,
+      margin + 10,
+      infoY + 12
+    );
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...this.colors.gray);
+    doc.text(expenses || "+ gastos", margin + 10, infoY + 22);
+
+    // Columna 2: Depósito
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text("DEPOSITO", margin + colWidth + 10, infoY);
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.secondary);
+    doc.text(
+      depositAmount ? `${parseFloat(depositAmount).toFixed(0)}\u20AC` : "1 mes",
+      margin + colWidth + 10,
+      infoY + 12
+    );
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...this.colors.gray);
+    doc.text("Reembolsable", margin + colWidth + 10, infoY + 22);
+
+    // Columna 3: Estancia
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text("ESTANCIA MINIMA", margin + 2 * colWidth + 10, infoY);
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.accent);
+    doc.text("6 meses", margin + 2 * colWidth + 10, infoY + 12);
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...this.colors.gray);
+    doc.text("Disponible ahora", margin + 2 * colWidth + 10, infoY + 22);
+
+    yPosition += infoBoxHeight + 12;
+
+    // ============================================
+    // Ubicación
+    // ============================================
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.dark);
+    doc.text("Ubicacion", margin, yPosition);
+    yPosition += 7;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...this.colors.gray);
+    if (propertyAddress) {
+      doc.text(propertyAddress, margin, yPosition);
+    }
+
+    // ============================================
+    // Footer de contacto - Línea fina + contacto
+    // ============================================
+    const footerY = pageHeight - 20;
+
+    // Línea separadora fina
+    doc.setDrawColor(...this.colors.lightGray);
+    doc.setLineWidth(0.5);
+    doc.line(margin, footerY, pageWidth - margin, footerY);
+
+    // Texto de contacto
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...this.colors.gray);
+    doc.text("Contacto:", margin, footerY + 10);
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.dark);
+    const contactText = ownerContact || "WhatsApp preferiblemente";
+    doc.text(contactText, pageWidth - margin, footerY + 10, { align: "right" });
+
+    // Guardar
+    const fileName = `Anuncio_${
+      locationShort.replace(/\s+/g, "_") || "Habitacion"
+    }_${Date.now()}.pdf`;
+    doc.save(fileName);
+    return doc;
   },
 
   /**
@@ -60,7 +621,6 @@ export const pdfService = {
       ownerDni = "",
     } = contractData;
 
-    const jsPDF = await loadJsPDF();
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
@@ -72,7 +632,6 @@ export const pdfService = {
       const {
         fontSize = 11,
         fontStyle = "normal",
-        align = "left",
         maxWidth = pageWidth - 2 * margin,
         color = this.colors.dark,
       } = options;
@@ -81,41 +640,41 @@ export const pdfService = {
       doc.setFont("helvetica", fontStyle);
       doc.setTextColor(...color);
       const lines = doc.splitTextToSize(text, maxWidth);
-      doc.text(lines, x, y, { align });
+      doc.text(lines, x, y);
       return lines.length * (fontSize * 0.4) + 2;
     };
 
-    // Header con diseño moderno
+    // Header
     doc.setFillColor(...this.colors.primary);
-    doc.rect(0, 0, pageWidth, 45, "F");
+    doc.rect(0, 0, pageWidth, 40, "F");
 
-    doc.setFontSize(22);
+    doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.white);
-    doc.text("CONTRATO DE ALQUILER", pageWidth / 2, 22, { align: "center" });
+    doc.text("CONTRATO DE ALQUILER", pageWidth / 2, 18, { align: "center" });
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
-    doc.text("DE HABITACIÓN", pageWidth / 2, 35, { align: "center" });
+    doc.text("DE HABITACION", pageWidth / 2, 30, { align: "center" });
 
-    yPosition = 60;
+    yPosition = 55;
 
-    // Fecha del contrato
+    // Fecha
     const today = new Date().toLocaleDateString("es-ES", {
       day: "numeric",
       month: "long",
       year: "numeric",
     });
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(...this.colors.gray);
     doc.text(`Documento generado el ${today}`, pageWidth - margin, yPosition, {
       align: "right",
     });
-    yPosition += 15;
+    yPosition += 12;
 
-    // Sección: PARTES
+    // Sección PARTES
     this._drawSectionHeader(
       doc,
       "PARTES INTERVINIENTES",
@@ -123,21 +682,14 @@ export const pdfService = {
       yPosition,
       pageWidth
     );
-    yPosition += 15;
+    yPosition += 12;
 
     // Card Arrendador
+    const cardWidth = (pageWidth - 2 * margin - 10) / 2;
     doc.setFillColor(...this.colors.lightGray);
-    doc.roundedRect(
-      margin,
-      yPosition,
-      (pageWidth - 2 * margin - 10) / 2,
-      35,
-      3,
-      3,
-      "F"
-    );
+    doc.roundedRect(margin, yPosition, cardWidth, 32, 3, 3, "F");
 
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.primary);
     doc.text("EL ARRENDADOR", margin + 5, yPosition + 8);
@@ -153,19 +705,11 @@ export const pdfService = {
     }
 
     // Card Arrendatario
-    const cardX = margin + (pageWidth - 2 * margin - 10) / 2 + 10;
+    const cardX = margin + cardWidth + 10;
     doc.setFillColor(...this.colors.lightGray);
-    doc.roundedRect(
-      cardX,
-      yPosition,
-      (pageWidth - 2 * margin - 10) / 2,
-      35,
-      3,
-      3,
-      "F"
-    );
+    doc.roundedRect(cardX, yPosition, cardWidth, 32, 3, 3, "F");
 
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.secondary);
     doc.text("EL ARRENDATARIO", cardX + 5, yPosition + 8);
@@ -174,18 +718,15 @@ export const pdfService = {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...this.colors.dark);
     doc.text(tenantName, cardX + 5, yPosition + 18);
-
-    let tenantInfo = [];
-    if (tenantDni) tenantInfo.push(`DNI: ${tenantDni}`);
-    if (tenantInfo.length > 0) {
+    if (tenantDni) {
       doc.setFontSize(9);
       doc.setTextColor(...this.colors.gray);
-      doc.text(tenantInfo.join(" | "), cardX + 5, yPosition + 26);
+      doc.text(`DNI: ${tenantDni}`, cardX + 5, yPosition + 26);
     }
 
-    yPosition += 50;
+    yPosition += 45;
 
-    // Sección: OBJETO
+    // Sección OBJETO
     this._drawSectionHeader(
       doc,
       "OBJETO DEL CONTRATO",
@@ -193,28 +734,22 @@ export const pdfService = {
       yPosition,
       pageWidth
     );
-    yPosition += 12;
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...this.colors.dark);
-    const objectText = `Se cede en alquiler la habitación "${roomName}" ubicada en la propiedad "${propertyName}", situada en ${propertyAddress}, incluyendo el uso compartido de las zonas comunes de la vivienda.`;
-    yPosition += addText(objectText, margin, yPosition, {
-      maxWidth: pageWidth - 2 * margin,
-    });
     yPosition += 10;
 
-    // Sección: CONDICIONES - Grid de info
+    const objectText = `Se cede en alquiler la habitacion "${roomName}" ubicada en la propiedad "${propertyName}", situada en ${propertyAddress}, incluyendo el uso compartido de las zonas comunes de la vivienda.`;
+    yPosition += addText(objectText, margin, yPosition);
+    yPosition += 8;
+
+    // Sección CONDICIONES
     this._drawSectionHeader(doc, "CONDICIONES", margin, yPosition, pageWidth);
-    yPosition += 12;
+    yPosition += 10;
 
-    const boxWidth = (pageWidth - 2 * margin - 20) / 3;
-    const boxHeight = 40;
+    const boxWidth = (pageWidth - 2 * margin - 16) / 3;
+    const boxHeight = 38;
 
-    // Box 1: Duración
+    // Box Duración
     this._drawInfoBox(doc, margin, yPosition, boxWidth, boxHeight, {
-      icon: "📅",
-      label: "DURACIÓN",
+      label: "DURACION",
       value: `${contractMonths || 12} meses`,
       subtext: `${new Date(startDate).toLocaleDateString("es-ES")} - ${new Date(
         endDate
@@ -222,36 +757,34 @@ export const pdfService = {
       color: this.colors.primary,
     });
 
-    // Box 2: Renta
+    // Box Renta
     this._drawInfoBox(
       doc,
-      margin + boxWidth + 10,
+      margin + boxWidth + 8,
       yPosition,
       boxWidth,
       boxHeight,
       {
-        icon: "💰",
         label: "RENTA MENSUAL",
-        value: `${parseFloat(monthlyRent).toFixed(0)}€`,
-        subtext: "Pagaderos los primeros 5 días",
+        value: `${parseFloat(monthlyRent).toFixed(0)}\u20AC`,
+        subtext: "Primeros 5 dias del mes",
         color: this.colors.accent,
       }
     );
 
-    // Box 3: Fianza
+    // Box Fianza
     this._drawInfoBox(
       doc,
-      margin + 2 * (boxWidth + 10),
+      margin + 2 * (boxWidth + 8),
       yPosition,
       boxWidth,
       boxHeight,
       {
-        icon: "🔒",
         label: "FIANZA",
         value: depositAmount
-          ? `${parseFloat(depositAmount).toFixed(0)}€`
+          ? `${parseFloat(depositAmount).toFixed(0)}\u20AC`
           : "1 mes",
-        subtext: "Reembolsable al finalizar",
+        subtext: "Reembolsable",
         color: this.colors.secondary,
       }
     );
@@ -259,12 +792,12 @@ export const pdfService = {
     yPosition += boxHeight + 15;
 
     // Verificar espacio
-    if (yPosition > 200) {
+    if (yPosition > 190) {
       doc.addPage();
       yPosition = margin;
     }
 
-    // Sección: OBLIGACIONES
+    // Sección OBLIGACIONES
     this._drawSectionHeader(
       doc,
       "OBLIGACIONES DEL ARRENDATARIO",
@@ -272,26 +805,23 @@ export const pdfService = {
       yPosition,
       pageWidth
     );
-    yPosition += 12;
+    yPosition += 10;
 
     const obligations = [
-      "Hacer uso adecuado de la habitación y zonas comunes.",
-      "No realizar modificaciones sin autorización escrita.",
-      "Mantener la habitación en buen estado de conservación.",
+      "Hacer uso adecuado de la habitacion y zonas comunes.",
+      "No realizar modificaciones sin autorizacion escrita.",
+      "Mantener la habitacion en buen estado de conservacion.",
       "Respetar la convivencia con otros inquilinos.",
-      "No subarrendar la habitación sin autorización.",
+      "No subarrendar la habitacion sin autorizacion.",
     ];
 
-    obligations.forEach((obligation, index) => {
+    obligations.forEach((obligation) => {
       doc.setFillColor(...this.colors.primary);
-      doc.circle(margin + 3, yPosition - 2, 2, "F");
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...this.colors.dark);
+      doc.circle(margin + 3, yPosition - 1.5, 1.5, "F");
       yPosition += addText(obligation, margin + 10, yPosition, {
-        maxWidth: pageWidth - 2 * margin - 10,
+        fontSize: 10,
       });
-      yPosition += 2;
+      yPosition += 1;
     });
 
     // Notas adicionales
@@ -304,55 +834,55 @@ export const pdfService = {
         yPosition,
         pageWidth
       );
-      yPosition += 12;
-      yPosition += addText(contractNotes, margin, yPosition);
+      yPosition += 10;
+      yPosition += addText(contractNotes, margin, yPosition, { fontSize: 10 });
     }
 
     // Firmas
-    if (yPosition > pageHeight - 80) {
+    if (yPosition > pageHeight - 70) {
       doc.addPage();
       yPosition = margin;
     }
 
-    yPosition = pageHeight - 70;
+    yPosition = pageHeight - 65;
 
     doc.setDrawColor(...this.colors.gray);
     doc.setLineWidth(0.5);
 
     // Firma Arrendador
-    doc.line(margin, yPosition + 25, margin + 70, yPosition + 25);
+    doc.line(margin, yPosition + 20, margin + 70, yPosition + 20);
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.dark);
-    doc.text("EL ARRENDADOR", margin, yPosition + 35);
+    doc.text("EL ARRENDADOR", margin, yPosition + 30);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...this.colors.gray);
-    doc.text(ownerName, margin, yPosition + 42);
+    doc.text(ownerName, margin, yPosition + 38);
 
     // Firma Arrendatario
     doc.line(
       pageWidth - margin - 70,
-      yPosition + 25,
+      yPosition + 20,
       pageWidth - margin,
-      yPosition + 25
+      yPosition + 20
     );
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.dark);
-    doc.text("EL ARRENDATARIO", pageWidth - margin - 70, yPosition + 35);
+    doc.text("EL ARRENDATARIO", pageWidth - margin - 70, yPosition + 30);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...this.colors.gray);
-    doc.text(tenantName, pageWidth - margin - 70, yPosition + 42);
+    doc.text(tenantName, pageWidth - margin - 70, yPosition + 38);
 
     // Footer
     doc.setFillColor(...this.colors.lightGray);
-    doc.rect(0, pageHeight - 15, pageWidth, 15, "F");
-    doc.setFontSize(8);
+    doc.rect(0, pageHeight - 12, pageWidth, 12, "F");
+    doc.setFontSize(7);
     doc.setTextColor(...this.colors.gray);
     doc.text(
       `Contrato generado digitalmente - ${propertyAddress}`,
       pageWidth / 2,
-      pageHeight - 6,
+      pageHeight - 5,
       { align: "center" }
     );
 
@@ -360,606 +890,57 @@ export const pdfService = {
     const fileName = `Contrato_${roomName}_${tenantName.replace(
       /\s+/g,
       "_"
-    )}_${new Date().getTime()}.pdf`;
-    doc.save(fileName);
-    return doc;
-  },
-
-  /**
-   * Genera un PDF de anuncio profesional tipo inmobiliaria premium
-   */
-  async generateRoomAd(roomData) {
-    const {
-      roomName,
-      propertyName,
-      propertyAddress,
-      monthlyRent,
-      sizeSqm,
-      description,
-      photos = [],
-      commonRooms = [],
-      depositAmount = null,
-      expenses = null,
-      ownerContact = null,
-    } = roomData;
-
-    const jsPDF = await loadJsPDF();
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
-    const margin = 12;
-    let yPosition = 0;
-
-    // ============================================
-    // PÁGINA 1: Hero + Info Principal
-    // ============================================
-
-    // Hero image o gradient background
-    let heroHeight = 100;
-    let hasHeroImage = false;
-
-    if (photos.length > 0) {
-      try {
-        const mainPhoto =
-          typeof photos[0] === "string"
-            ? photos[0]
-            : photos[0].url || photos[0];
-        const imgData = await this.loadImageAsBase64(mainPhoto);
-
-        if (imgData) {
-          // Cargar imagen para obtener dimensiones
-          const img = await this._loadImage(imgData);
-          const imgAspect = img.width / img.height;
-
-          // Calcular dimensiones para cubrir el ancho completo
-          let imgWidth = pageWidth;
-          let imgHeight = pageWidth / imgAspect;
-
-          // Si es muy alta, recortamos
-          if (imgHeight > 120) {
-            imgHeight = 120;
-          }
-          heroHeight = imgHeight;
-
-          // Añadir imagen como hero
-          doc.addImage(
-            imgData,
-            "JPEG",
-            0,
-            0,
-            pageWidth,
-            imgHeight,
-            undefined,
-            "FAST"
-          );
-          hasHeroImage = true;
-
-          // Overlay gradient oscuro para mejor legibilidad
-          doc.setGState(new doc.GState({ opacity: 0.4 }));
-          doc.setFillColor(0, 0, 0);
-          doc.rect(0, imgHeight - 50, pageWidth, 50, "F");
-          doc.setGState(new doc.GState({ opacity: 1 }));
-        }
-      } catch (err) {
-        console.warn("Error loading hero image:", err);
-      }
-    }
-
-    // Si no hay imagen, crear un header con gradiente
-    if (!hasHeroImage) {
-      // Simular gradiente con rectángulos
-      for (let i = 0; i < 20; i++) {
-        const ratio = i / 20;
-        const r = Math.round(41 + (99 - 41) * ratio);
-        const g = Math.round(98 + (102 - 98) * ratio);
-        const b = Math.round(255 + (241 - 255) * ratio);
-        doc.setFillColor(r, g, b);
-        doc.rect(0, i * 5, pageWidth, 6, "F");
-      }
-      heroHeight = 100;
-    }
-
-    // Badge de precio sobre el hero
-    const priceBoxWidth = 70;
-    const priceBoxHeight = 35;
-    const priceBoxX = pageWidth - margin - priceBoxWidth;
-    const priceBoxY = heroHeight - priceBoxHeight - 10;
-
-    doc.setFillColor(...this.colors.accent);
-    doc.roundedRect(
-      priceBoxX,
-      priceBoxY,
-      priceBoxWidth,
-      priceBoxHeight,
-      4,
-      4,
-      "F"
-    );
-
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...this.colors.white);
-    doc.text(
-      `${parseFloat(monthlyRent || 0).toFixed(0)}€`,
-      priceBoxX + priceBoxWidth / 2,
-      priceBoxY + 15,
-      { align: "center" }
-    );
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text("/mes", priceBoxX + priceBoxWidth / 2, priceBoxY + 25, {
-      align: "center",
-    });
-
-    // Título sobre el hero
-    doc.setFontSize(24);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...this.colors.white);
-
-    let titleText = "Habitación en alquiler";
-    if (propertyName && propertyName.toLowerCase().includes("chalet")) {
-      titleText = "Habitación en chalet";
-    }
-    doc.text(titleText, margin, heroHeight - 25);
-
-    // Subtítulo con ubicación
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    const locationShort = propertyAddress ? propertyAddress.split(",")[0] : "";
-    doc.text(`📍 ${locationShort}`, margin, heroHeight - 10);
-
-    yPosition = heroHeight + 15;
-
-    // ============================================
-    // Características principales (badges)
-    // ============================================
-    const features = [];
-    if (sizeSqm) features.push({ icon: "📐", text: `${sizeSqm} m²` });
-
-    // Detectar características de zonas comunes
-    const hasPool = commonRooms.some((r) =>
-      r.name.toLowerCase().includes("piscina")
-    );
-    const hasGarden = commonRooms.some((r) =>
-      r.name.toLowerCase().includes("jardín")
-    );
-    const hasParking = commonRooms.some(
-      (r) =>
-        r.name.toLowerCase().includes("parking") ||
-        r.name.toLowerCase().includes("garaje")
-    );
-    const hasTerrace = commonRooms.some((r) =>
-      r.name.toLowerCase().includes("terraza")
-    );
-
-    if (hasPool) features.push({ icon: "🏊", text: "Piscina" });
-    if (hasGarden) features.push({ icon: "🌳", text: "Jardín" });
-    if (hasTerrace) features.push({ icon: "☀️", text: "Terraza" });
-    if (hasParking) features.push({ icon: "🚗", text: "Parking" });
-    features.push({ icon: "📶", text: "WiFi incluido" });
-
-    if (features.length > 0) {
-      let featureX = margin;
-      features.forEach((feat, idx) => {
-        if (idx < 5) {
-          // Máximo 5 badges
-          const badgeWidth = doc.getTextWidth(feat.text) + 20;
-
-          doc.setFillColor(...this.colors.lightGray);
-          doc.roundedRect(featureX, yPosition, badgeWidth, 18, 3, 3, "F");
-
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(...this.colors.dark);
-          doc.text(`${feat.icon} ${feat.text}`, featureX + 5, yPosition + 12);
-
-          featureX += badgeWidth + 8;
-        }
-      });
-      yPosition += 30;
-    }
-
-    // ============================================
-    // Descripción
-    // ============================================
-    if (description && description.trim()) {
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...this.colors.dark);
-      doc.text("Sobre la habitación", margin, yPosition);
-      yPosition += 8;
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...this.colors.gray);
-      const descLines = doc.splitTextToSize(
-        description,
-        pageWidth - 2 * margin
-      );
-      doc.text(descLines, margin, yPosition);
-      yPosition += descLines.length * 5 + 10;
-    }
-
-    // ============================================
-    // Galería de fotos de la habitación
-    // ============================================
-    const roomPhotos = photos.slice(1); // Excluir la primera que ya es el hero
-    if (roomPhotos.length > 0) {
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...this.colors.dark);
-      doc.text("Galería", margin, yPosition);
-      yPosition += 8;
-
-      const photosPerRow = Math.min(roomPhotos.length, 3);
-      const photoGap = 6;
-      const photoWidth =
-        (pageWidth - 2 * margin - (photosPerRow - 1) * photoGap) / photosPerRow;
-      const photoHeight = 50;
-
-      let photoCol = 0;
-      for (let i = 0; i < Math.min(roomPhotos.length, 6); i++) {
-        // Verificar espacio
-        if (yPosition + photoHeight > pageHeight - 40) {
-          doc.addPage();
-          yPosition = margin;
-        }
-
-        try {
-          const photoUrl =
-            typeof roomPhotos[i] === "string"
-              ? roomPhotos[i]
-              : roomPhotos[i].url || roomPhotos[i];
-          const imgData = await this.loadImageAsBase64(photoUrl);
-
-          if (imgData) {
-            const photoX = margin + photoCol * (photoWidth + photoGap);
-
-            // Recortar imagen para que quepa en el espacio
-            doc.addImage(
-              imgData,
-              "JPEG",
-              photoX,
-              yPosition,
-              photoWidth,
-              photoHeight,
-              undefined,
-              "FAST"
-            );
-
-            // Borde redondeado (simulado con clip)
-            doc.setDrawColor(...this.colors.lightGray);
-            doc.setLineWidth(0.5);
-            doc.roundedRect(
-              photoX,
-              yPosition,
-              photoWidth,
-              photoHeight,
-              3,
-              3,
-              "S"
-            );
-
-            photoCol++;
-            if (photoCol >= photosPerRow) {
-              photoCol = 0;
-              yPosition += photoHeight + photoGap;
-            }
-          }
-        } catch (err) {
-          console.warn("Error loading photo:", err);
-        }
-      }
-
-      if (photoCol > 0) {
-        yPosition += photoHeight + photoGap;
-      }
-      yPosition += 5;
-    }
-
-    // ============================================
-    // Zonas comunes
-    // ============================================
-    if (commonRooms.length > 0) {
-      // Verificar espacio
-      if (yPosition > pageHeight - 80) {
-        doc.addPage();
-        yPosition = margin;
-      }
-
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...this.colors.dark);
-      doc.text("Zonas comunes", margin, yPosition);
-      yPosition += 8;
-
-      // Mostrar zonas comunes con fotos si las tienen
-      const roomsWithPhotos = commonRooms.filter(
-        (r) => r.photos && r.photos.length > 0
-      );
-      const roomsWithoutPhotos = commonRooms.filter(
-        (r) => !r.photos || r.photos.length === 0
-      );
-
-      if (roomsWithPhotos.length > 0) {
-        const commonPhotoWidth = (pageWidth - 2 * margin - 6) / 2;
-        const commonPhotoHeight = 45;
-        let commonCol = 0;
-
-        for (const room of roomsWithPhotos.slice(0, 4)) {
-          if (yPosition + commonPhotoHeight + 15 > pageHeight - 30) {
-            doc.addPage();
-            yPosition = margin;
-          }
-
-          try {
-            const photoUrl =
-              typeof room.photos[0] === "string"
-                ? room.photos[0]
-                : room.photos[0].url || room.photos[0];
-            const imgData = await this.loadImageAsBase64(photoUrl);
-
-            if (imgData) {
-              const photoX = margin + commonCol * (commonPhotoWidth + 6);
-
-              doc.addImage(
-                imgData,
-                "JPEG",
-                photoX,
-                yPosition,
-                commonPhotoWidth,
-                commonPhotoHeight,
-                undefined,
-                "FAST"
-              );
-
-              // Etiqueta sobre la foto
-              doc.setFillColor(0, 0, 0);
-              doc.setGState(new doc.GState({ opacity: 0.6 }));
-              doc.rect(
-                photoX,
-                yPosition + commonPhotoHeight - 15,
-                commonPhotoWidth,
-                15,
-                "F"
-              );
-              doc.setGState(new doc.GState({ opacity: 1 }));
-
-              doc.setFontSize(9);
-              doc.setFont("helvetica", "bold");
-              doc.setTextColor(...this.colors.white);
-              doc.text(
-                room.name,
-                photoX + 5,
-                yPosition + commonPhotoHeight - 5
-              );
-
-              commonCol++;
-              if (commonCol >= 2) {
-                commonCol = 0;
-                yPosition += commonPhotoHeight + 8;
-              }
-            }
-          } catch (err) {
-            console.warn("Error loading common room photo:", err);
-          }
-        }
-
-        if (commonCol > 0) {
-          yPosition += commonPhotoHeight + 8;
-        }
-      }
-
-      // Listar zonas sin fotos
-      if (roomsWithoutPhotos.length > 0) {
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...this.colors.gray);
-        const commonList = roomsWithoutPhotos.map((r) => r.name).join(" • ");
-        const listLines = doc.splitTextToSize(
-          `Además: ${commonList}`,
-          pageWidth - 2 * margin
-        );
-        doc.text(listLines, margin, yPosition);
-        yPosition += listLines.length * 5 + 5;
-      }
-
-      yPosition += 10;
-    }
-
-    // ============================================
-    // Box de información de alquiler
-    // ============================================
-    if (yPosition > pageHeight - 70) {
-      doc.addPage();
-      yPosition = margin;
-    }
-
-    doc.setFillColor(...this.colors.lightGray);
-    doc.roundedRect(margin, yPosition, pageWidth - 2 * margin, 55, 5, 5, "F");
-
-    // Línea decorativa superior
-    doc.setFillColor(...this.colors.primary);
-    doc.rect(margin, yPosition, pageWidth - 2 * margin, 4, "F");
-
-    yPosition += 15;
-
-    // Grid de info
-    const infoColWidth = (pageWidth - 2 * margin) / 3;
-
-    // Columna 1: Precio
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...this.colors.gray);
-    doc.text("ALQUILER MENSUAL", margin + 10, yPosition);
-
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...this.colors.primary);
-    doc.text(
-      `${parseFloat(monthlyRent || 0).toFixed(0)}€`,
-      margin + 10,
-      yPosition + 12
-    );
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...this.colors.gray);
-    doc.text(expenses || "+ gastos", margin + 10, yPosition + 20);
-
-    // Columna 2: Depósito
-    doc.setFontSize(9);
-    doc.text("DEPÓSITO", margin + infoColWidth + 10, yPosition);
-
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...this.colors.secondary);
-    const depositText = depositAmount
-      ? `${parseFloat(depositAmount).toFixed(0)}€`
-      : "1 mes";
-    doc.text(depositText, margin + infoColWidth + 10, yPosition + 12);
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...this.colors.gray);
-    doc.text("Reembolsable", margin + infoColWidth + 10, yPosition + 20);
-
-    // Columna 3: Estancia mínima
-    doc.setFontSize(9);
-    doc.text("ESTANCIA MÍNIMA", margin + 2 * infoColWidth + 10, yPosition);
-
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...this.colors.accent);
-    doc.text("6 meses", margin + 2 * infoColWidth + 10, yPosition + 12);
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...this.colors.gray);
-    doc.text(
-      "Disponible ahora",
-      margin + 2 * infoColWidth + 10,
-      yPosition + 20
-    );
-
-    yPosition += 50;
-
-    // ============================================
-    // Ubicación
-    // ============================================
-    if (yPosition > pageHeight - 40) {
-      doc.addPage();
-      yPosition = margin;
-    }
-
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...this.colors.dark);
-    doc.text("📍 Ubicación", margin, yPosition);
-    yPosition += 8;
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...this.colors.gray);
-    if (propertyAddress) {
-      const addrLines = doc.splitTextToSize(
-        propertyAddress,
-        pageWidth - 2 * margin
-      );
-      doc.text(addrLines, margin, yPosition);
-      yPosition += addrLines.length * 5 + 10;
-    }
-
-    // ============================================
-    // Contacto (footer)
-    // ============================================
-    // Footer fijo en la parte inferior
-    const footerY = pageHeight - 25;
-
-    doc.setFillColor(...this.colors.primary);
-    doc.rect(0, footerY - 5, pageWidth, 30, "F");
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...this.colors.white);
-    doc.text("¿Interesado? Contacta ahora", margin, footerY + 8);
-
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    const contactText = ownerContact || "WhatsApp preferiblemente";
-    doc.text(contactText, pageWidth - margin, footerY + 8, { align: "right" });
-
-    // Guardar
-    const fileName = `Anuncio_${
-      locationShort.replace(/\s+/g, "_") || "Habitacion"
-    }_${Date.now()}.pdf`;
+    )}_${Date.now()}.pdf`;
     doc.save(fileName);
     return doc;
   },
 
   // ============================================
-  // Helpers privados
+  // Helpers
   // ============================================
 
-  /**
-   * Dibuja un header de sección con línea decorativa
-   */
   _drawSectionHeader(doc, text, x, y, pageWidth) {
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.primary);
     doc.text(text, x, y);
 
-    // Línea decorativa
     const textWidth = doc.getTextWidth(text);
     doc.setDrawColor(...this.colors.primary);
-    doc.setLineWidth(2);
-    doc.line(x, y + 3, x + textWidth, y + 3);
+    doc.setLineWidth(1.5);
+    doc.line(x, y + 2, x + textWidth, y + 2);
 
-    // Línea gris más larga
     doc.setDrawColor(...this.colors.lightGray);
     doc.setLineWidth(0.5);
-    doc.line(x + textWidth + 5, y + 3, pageWidth - 20, y + 3);
+    doc.line(x + textWidth + 5, y + 2, pageWidth - 20, y + 2);
   },
 
-  /**
-   * Dibuja un box de información con icono
-   */
   _drawInfoBox(doc, x, y, width, height, { label, value, subtext, color }) {
-    // Fondo
     doc.setFillColor(...this.colors.lightGray);
     doc.roundedRect(x, y, width, height, 3, 3, "F");
 
-    // Barra de color lateral
     doc.setFillColor(...color);
-    doc.rect(x, y, 4, height, "F");
+    doc.rect(x, y, 3, height, "F");
 
-    // Etiqueta
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...color);
-    doc.text(label, x + 10, y + 10);
+    doc.text(label, x + 8, y + 9);
 
-    // Valor
-    doc.setFontSize(14);
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.dark);
-    doc.text(value, x + 10, y + 22);
+    doc.text(value, x + 8, y + 20);
 
-    // Subtexto
     if (subtext) {
       doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...this.colors.gray);
-      const lines = doc.splitTextToSize(subtext, width - 15);
-      doc.text(lines[0], x + 10, y + 32);
+      const lines = doc.splitTextToSize(subtext, width - 12);
+      doc.text(lines[0], x + 8, y + 30);
     }
   },
 
-  /**
-   * Carga una imagen y devuelve el objeto Image
-   */
   async _loadImage(src) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -969,19 +950,14 @@ export const pdfService = {
     });
   },
 
-  /**
-   * Carga una imagen desde URL y la convierte a base64
-   */
   async loadImageAsBase64(url) {
     try {
       if (!url) return null;
       if (url.startsWith("data:")) return url;
 
       const response = await fetch(url, { mode: "cors" });
-      if (!response.ok) {
-        console.warn("Error fetching image:", response.status);
-        return null;
-      }
+      if (!response.ok) return null;
+
       const blob = await response.blob();
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -995,9 +971,6 @@ export const pdfService = {
     }
   },
 
-  /**
-   * Convierte un número a palabras en español
-   */
   numberToWords(num) {
     const ones = [
       "",
@@ -1046,7 +1019,7 @@ export const pdfService = {
         "trece",
         "catorce",
         "quince",
-        "dieciséis",
+        "dieciseis",
         "diecisiete",
         "dieciocho",
         "diecinueve",
