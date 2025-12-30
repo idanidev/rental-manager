@@ -274,7 +274,7 @@ export const pdfService = {
     }
 
     // ============================================
-    // Galería de fotos - MEJORADA
+    // Galería de fotos - RESOLUCIÓN NATIVA
     // ============================================
     const roomPhotos = photos.slice(1); // Excluir hero
 
@@ -282,35 +282,19 @@ export const pdfService = {
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...this.colors.dark);
-      doc.text("Galeria", margin, yPosition);
+      doc.text("Galería", margin, yPosition);
       yPosition += 8;
 
-      // Calcular grid óptimo según número de fotos
-      const numPhotos = Math.min(roomPhotos.length, 4);
       const photoGap = 4;
       const availableWidth = pageWidth - 2 * margin;
-
-      let gridConfig;
-      if (numPhotos === 1) {
-        gridConfig = { cols: 1, photoWidth: availableWidth, photoHeight: 70 };
-      } else if (numPhotos === 2) {
-        gridConfig = {
-          cols: 2,
-          photoWidth: (availableWidth - photoGap) / 2,
-          photoHeight: 55,
-        };
-      } else {
-        gridConfig = {
-          cols: 2,
-          photoWidth: (availableWidth - photoGap) / 2,
-          photoHeight: 45,
-        };
-      }
+      const cols = 2;
+      const photoWidth = (availableWidth - photoGap) / cols;
 
       let col = 0;
       let rowY = yPosition;
 
-      for (let i = 0; i < numPhotos; i++) {
+      // Mostrar TODAS las fotos, sin límite
+      for (let i = 0; i < roomPhotos.length; i++) {
         try {
           const photoUrl =
             typeof roomPhotos[i] === "string"
@@ -319,37 +303,45 @@ export const pdfService = {
           const imgData = await this.loadImageAsBase64(photoUrl);
 
           if (imgData) {
-            const photoX = margin + col * (gridConfig.photoWidth + photoGap);
+            // Calcular dimensiones nativas de la imagen
+            const img = await this._loadImage(imgData);
+            const imgAspect = img.width / img.height;
 
-            // Dibujar imagen con clip simulado (bordes redondeados)
+            // Mantener proporción nativa, ajustando al ancho de la columna
+            const photoHeight = photoWidth / imgAspect;
+            const maxHeight = 70; // Limitar altura máxima por fila
+            const finalHeight = Math.min(photoHeight, maxHeight);
+
+            // Verificar espacio en página
+            if (rowY + finalHeight > pageHeight - 70) {
+              doc.addPage();
+              rowY = margin;
+              col = 0;
+            }
+
+            const photoX = margin + col * (photoWidth + photoGap);
+
+            // Dibujar imagen en resolución nativa (proporcional)
             doc.addImage(
               imgData,
               "JPEG",
               photoX,
               rowY,
-              gridConfig.photoWidth,
-              gridConfig.photoHeight,
+              photoWidth,
+              finalHeight,
               undefined,
-              "FAST"
+              "NONE" // Sin compresión para máxima calidad
             );
 
             // Borde sutil
             doc.setDrawColor(220, 220, 220);
             doc.setLineWidth(0.3);
-            doc.roundedRect(
-              photoX,
-              rowY,
-              gridConfig.photoWidth,
-              gridConfig.photoHeight,
-              2,
-              2,
-              "S"
-            );
+            doc.roundedRect(photoX, rowY, photoWidth, finalHeight, 2, 2, "S");
 
             col++;
-            if (col >= gridConfig.cols) {
+            if (col >= cols) {
               col = 0;
-              rowY += gridConfig.photoHeight + photoGap;
+              rowY += finalHeight + photoGap;
             }
           }
         } catch (err) {
@@ -358,12 +350,12 @@ export const pdfService = {
       }
 
       // Ajustar yPosition
-      if (col > 0) rowY += gridConfig.photoHeight + photoGap;
+      if (col > 0) rowY += 70 + photoGap; // Usar altura máxima estimada
       yPosition = rowY + 5;
     }
 
     // ============================================
-    // Zonas comunes - MEJORADAS
+    // Zonas comunes - TODAS LAS FOTOS EN RESOLUCIÓN NATIVA
     // ============================================
     if (commonRooms.length > 0) {
       // Verificar espacio, si no hay suficiente ir a página 2
@@ -385,72 +377,93 @@ export const pdfService = {
       if (roomsWithPhotos.length > 0) {
         const commonGap = 6;
         const commonWidth = (pageWidth - 2 * margin - commonGap) / 2;
-        const commonHeight = 55;
+        const cols = 2;
 
         let commonCol = 0;
-        for (const room of roomsWithPhotos.slice(0, 4)) {
-          // Verificar espacio
-          if (yPosition + commonHeight > pageHeight - 70) {
-            doc.addPage();
-            yPosition = margin;
-          }
 
-          try {
-            const photoUrl =
-              typeof room.photos[0] === "string"
-                ? room.photos[0]
-                : room.photos[0].url || room.photos[0];
-            const imgData = await this.loadImageAsBase64(photoUrl);
+        // Iterar por TODAS las zonas comunes (sin límite)
+        for (const room of roomsWithPhotos) {
+          // Mostrar TODAS las fotos de cada zona común (igual que la galería)
+          for (
+            let photoIndex = 0;
+            photoIndex < room.photos.length;
+            photoIndex++
+          ) {
+            try {
+              const photoUrl =
+                typeof room.photos[photoIndex] === "string"
+                  ? room.photos[photoIndex]
+                  : room.photos[photoIndex].url || room.photos[photoIndex];
+              const imgData = await this.loadImageAsBase64(photoUrl);
 
-            if (imgData) {
-              const photoX = margin + commonCol * (commonWidth + commonGap);
+              if (imgData) {
+                // Calcular dimensiones nativas de la imagen
+                const img = await this._loadImage(imgData);
+                const imgAspect = img.width / img.height;
 
-              doc.addImage(
-                imgData,
-                "JPEG",
-                photoX,
-                yPosition,
-                commonWidth,
-                commonHeight,
-                undefined,
-                "FAST"
-              );
+                // Mantener proporción nativa, ajustando al ancho de la columna
+                const calculatedHeight = commonWidth / imgAspect;
+                const maxHeight = 65; // Limitar altura máxima
+                const commonHeight = Math.min(calculatedHeight, maxHeight);
 
-              // Etiqueta con nombre sobre la foto
-              const labelHeight = 18;
-              doc.setFillColor(0, 0, 0);
-              doc.setGState(new doc.GState({ opacity: 0.65 }));
-              doc.rect(
-                photoX,
-                yPosition + commonHeight - labelHeight,
-                commonWidth,
-                labelHeight,
-                "F"
-              );
-              doc.setGState(new doc.GState({ opacity: 1 }));
+                // Verificar espacio
+                if (yPosition + commonHeight > pageHeight - 70) {
+                  doc.addPage();
+                  yPosition = margin;
+                  commonCol = 0;
+                }
 
-              doc.setFontSize(10);
-              doc.setFont("helvetica", "bold");
-              doc.setTextColor(...this.colors.white);
-              doc.text(
-                room.name || "Zona comun",
-                photoX + 6,
-                yPosition + commonHeight - 6
-              );
+                const photoX = margin + commonCol * (commonWidth + commonGap);
 
-              commonCol++;
-              if (commonCol >= 2) {
-                commonCol = 0;
-                yPosition += commonHeight + commonGap;
+                doc.addImage(
+                  imgData,
+                  "JPEG",
+                  photoX,
+                  yPosition,
+                  commonWidth,
+                  commonHeight,
+                  undefined,
+                  "NONE" // Sin compresión para máxima calidad
+                );
+
+                // Etiqueta con nombre sobre la foto (solo en la primera foto de cada zona)
+                if (photoIndex === 0) {
+                  const labelHeight = 18;
+                  doc.setFillColor(0, 0, 0);
+                  doc.setGState(new doc.GState({ opacity: 0.65 }));
+                  doc.rect(
+                    photoX,
+                    yPosition + commonHeight - labelHeight,
+                    commonWidth,
+                    labelHeight,
+                    "F"
+                  );
+                  doc.setGState(new doc.GState({ opacity: 1 }));
+
+                  doc.setFontSize(10);
+                  doc.setFont("helvetica", "bold");
+                  doc.setTextColor(...this.colors.white);
+                  doc.text(
+                    room.name || "Zona común",
+                    photoX + 6,
+                    yPosition + commonHeight - 6
+                  );
+                }
+
+                commonCol++;
+                if (commonCol >= cols) {
+                  commonCol = 0;
+                  yPosition += commonHeight + commonGap;
+                }
               }
+            } catch (err) {
+              console.warn("Error loading common room photo:", err);
             }
-          } catch (err) {
-            console.warn("Error loading common room photo:", err);
           }
         }
 
         if (commonCol > 0) {
-          yPosition += commonHeight + commonGap;
+          yPosition += 65 + commonGap; // Usar altura máxima estimada
         }
       } else {
         // Lista simple si no hay fotos
