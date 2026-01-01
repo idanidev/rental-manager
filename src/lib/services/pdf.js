@@ -289,6 +289,7 @@ export const pdfService = {
       const availableWidth = pageWidth - 2 * margin;
       const cols = 2;
       const photoWidth = (availableWidth - photoGap) / cols;
+      const defaultPhotoHeight = 55; // Altura por defecto
 
       let col = 0;
       let rowY = yPosition;
@@ -303,14 +304,21 @@ export const pdfService = {
           const imgData = await this.loadImageAsBase64(photoUrl);
 
           if (imgData) {
-            // Calcular dimensiones nativas de la imagen
-            const img = await this._loadImage(imgData);
-            const imgAspect = img.width / img.height;
+            let finalHeight = defaultPhotoHeight;
 
-            // Mantener proporción nativa, ajustando al ancho de la columna
-            const photoHeight = photoWidth / imgAspect;
-            const maxHeight = 70; // Limitar altura máxima por fila
-            const finalHeight = Math.min(photoHeight, maxHeight);
+            // Intentar calcular aspect ratio nativo
+            try {
+              const img = await this._loadImage(imgData);
+              if (img && img.width && img.height) {
+                const imgAspect = img.width / img.height;
+                const calculatedHeight = photoWidth / imgAspect;
+                const maxHeight = 70;
+                finalHeight = Math.min(calculatedHeight, maxHeight);
+              }
+            } catch (imgErr) {
+              // Si falla, usar altura por defecto
+              console.warn("Using default height for image:", imgErr);
+            }
 
             // Verificar espacio en página
             if (rowY + finalHeight > pageHeight - 70) {
@@ -321,7 +329,7 @@ export const pdfService = {
 
             const photoX = margin + col * (photoWidth + photoGap);
 
-            // Dibujar imagen en resolución nativa (proporcional)
+            // Dibujar imagen
             doc.addImage(
               imgData,
               "JPEG",
@@ -330,7 +338,7 @@ export const pdfService = {
               photoWidth,
               finalHeight,
               undefined,
-              "NONE" // Sin compresión para máxima calidad
+              "FAST"
             );
 
             // Borde sutil
@@ -350,7 +358,7 @@ export const pdfService = {
       }
 
       // Ajustar yPosition
-      if (col > 0) rowY += 70 + photoGap; // Usar altura máxima estimada
+      if (col > 0) rowY += defaultPhotoHeight + photoGap;
       yPosition = rowY + 5;
     }
 
@@ -378,6 +386,7 @@ export const pdfService = {
         const commonGap = 6;
         const commonWidth = (pageWidth - 2 * margin - commonGap) / 2;
         const cols = 2;
+        const defaultCommonHeight = 55; // Altura por defecto
 
         let commonCol = 0;
 
@@ -397,14 +406,23 @@ export const pdfService = {
               const imgData = await this.loadImageAsBase64(photoUrl);
 
               if (imgData) {
-                // Calcular dimensiones nativas de la imagen
-                const img = await this._loadImage(imgData);
-                const imgAspect = img.width / img.height;
+                let commonHeight = defaultCommonHeight;
 
-                // Mantener proporción nativa, ajustando al ancho de la columna
-                const calculatedHeight = commonWidth / imgAspect;
-                const maxHeight = 65; // Limitar altura máxima
-                const commonHeight = Math.min(calculatedHeight, maxHeight);
+                // Intentar calcular aspect ratio nativo
+                try {
+                  const img = await this._loadImage(imgData);
+                  if (img && img.width && img.height) {
+                    const imgAspect = img.width / img.height;
+                    const calculatedHeight = commonWidth / imgAspect;
+                    const maxHeight = 65;
+                    commonHeight = Math.min(calculatedHeight, maxHeight);
+                  }
+                } catch (imgErr) {
+                  console.warn(
+                    "Using default height for common room image:",
+                    imgErr
+                  );
+                }
 
                 // Verificar espacio
                 if (yPosition + commonHeight > pageHeight - 70) {
@@ -423,7 +441,7 @@ export const pdfService = {
                   commonWidth,
                   commonHeight,
                   undefined,
-                  "NONE" // Sin compresión para máxima calidad
+                  "FAST"
                 );
 
                 // Etiqueta con nombre sobre la foto (solo en la primera foto de cada zona)
@@ -463,7 +481,7 @@ export const pdfService = {
         }
 
         if (commonCol > 0) {
-          yPosition += 65 + commonGap; // Usar altura máxima estimada
+          yPosition += defaultCommonHeight + commonGap;
         }
       } else {
         // Lista simple si no hay fotos
