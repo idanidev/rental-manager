@@ -42,101 +42,51 @@ export const pdfService = {
     let yPosition = 0;
 
     // ============================================
-    // PÁGINA 1: Hero + Info Principal
+    // PÁGINA 1: Header (Título + Precio + Ubicación)
     // ============================================
+    const headerHeight = 45;
 
-    // Intentar cargar imagen hero
-    let heroHeight = 95;
-    let hasHeroImage = false;
+    // Fondo del header
+    doc.setFillColor(...this.colors.primary);
+    doc.rect(0, 0, pageWidth, headerHeight, "F");
 
-    if (photos.length > 0) {
-      try {
-        const mainPhoto =
-          typeof photos[0] === "string"
-            ? photos[0]
-            : photos[0].url || photos[0];
-        const imgData = await this.loadImageAsBase64(mainPhoto);
-
-        if (imgData) {
-          const img = await this._loadImage(imgData);
-          const imgAspect = img.width / img.height;
-
-          // Calcular dimensiones para cubrir el ancho manteniendo proporción
-          let imgWidth = pageWidth;
-          let imgHeight = pageWidth / imgAspect;
-
-          // Limitar altura máxima
-          if (imgHeight > 110) {
-            imgHeight = 110;
-            imgWidth = imgHeight * imgAspect;
-          }
-          if (imgHeight < 80) {
-            imgHeight = 80;
-          }
-
-          heroHeight = Math.min(imgHeight, 110);
-
-          // Centrar imagen si es más ancha
-          const imgX = (pageWidth - imgWidth) / 2;
-          doc.addImage(
-            imgData,
-            "JPEG",
-            Math.min(0, imgX),
-            0,
-            Math.max(pageWidth, imgWidth),
-            heroHeight,
-            undefined,
-            "FAST"
-          );
-          hasHeroImage = true;
-
-          // Overlay degradado para legibilidad (simulado con rectángulos)
-          for (let i = 0; i < 15; i++) {
-            const alpha = (i / 15) * 0.7;
-            doc.setFillColor(0, 0, 0);
-            doc.setGState(new doc.GState({ opacity: alpha }));
-            doc.rect(0, heroHeight - 45 + i * 3, pageWidth, 3, "F");
-          }
-          doc.setGState(new doc.GState({ opacity: 1 }));
-        }
-      } catch (err) {
-        console.warn("Error loading hero image:", err);
-      }
+    // Patrón decorativo sutil en header
+    doc.setFillColor(255, 255, 255);
+    doc.setGState(new doc.GState({ opacity: 0.1 }));
+    for (let i = 0; i < 5; i++) {
+      doc.circle(pageWidth - 20 - i * 25, 15 + i * 5, 30, "F");
     }
-
-    // Si no hay imagen, crear header con color sólido elegante
-    if (!hasHeroImage) {
-      doc.setFillColor(...this.colors.primary);
-      doc.rect(0, 0, pageWidth, heroHeight, "F");
-
-      // Patrón decorativo sutil
-      doc.setFillColor(255, 255, 255);
-      doc.setGState(new doc.GState({ opacity: 0.1 }));
-      for (let i = 0; i < 5; i++) {
-        doc.circle(pageWidth - 20 - i * 25, 30 + i * 10, 40, "F");
-      }
-      doc.setGState(new doc.GState({ opacity: 1 }));
-    }
-
-    // Badge de precio - diseño más compacto y elegante
-    const priceBoxWidth = 65;
-    const priceBoxHeight = 32;
-    const priceBoxX = pageWidth - margin - priceBoxWidth;
-    const priceBoxY = heroHeight - priceBoxHeight - 8;
-
-    // Sombra sutil
-    doc.setFillColor(0, 0, 0);
-    doc.setGState(new doc.GState({ opacity: 0.2 }));
-    doc.roundedRect(
-      priceBoxX + 2,
-      priceBoxY + 2,
-      priceBoxWidth,
-      priceBoxHeight,
-      4,
-      4,
-      "F"
-    );
     doc.setGState(new doc.GState({ opacity: 1 }));
+
+    // Título principal
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...this.colors.white);
+
+    let titleText = "Habitación en alquiler";
+    if (propertyName) {
+      const propLower = propertyName.toLowerCase();
+      if (propLower.includes("chalet")) {
+        titleText = "Habitación en chalet";
+      } else if (propLower.includes("piso")) {
+        titleText = "Habitación en piso";
+      } else if (propLower.includes("casa")) {
+        titleText = "Habitación en casa";
+      }
+    }
+    doc.text(titleText, margin, 20);
+
+    // Ubicación bajo el título
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    const locationShort = propertyAddress ? propertyAddress.split(",")[0] : "";
+    doc.text(locationShort, margin, 32);
+
+    // Badge de precio
+    const priceBoxWidth = 60;
+    const priceBoxHeight = 28;
+    const priceBoxX = pageWidth - margin - priceBoxWidth;
+    const priceBoxY = (headerHeight - priceBoxHeight) / 2;
 
     doc.setFillColor(...this.colors.accent);
     doc.roundedRect(
@@ -149,51 +99,122 @@ export const pdfService = {
       "F"
     );
 
-    doc.setFontSize(20);
+    doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.white);
     const priceText = `${parseFloat(monthlyRent || 0).toFixed(0)}\u20AC`;
-    doc.text(priceText, priceBoxX + priceBoxWidth / 2, priceBoxY + 14, {
+    doc.text(priceText, priceBoxX + priceBoxWidth / 2, priceBoxY + 12, {
       align: "center",
     });
 
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text("/mes", priceBoxX + priceBoxWidth / 2, priceBoxY + 24, {
+    doc.text("/mes", priceBoxX + priceBoxWidth / 2, priceBoxY + 20, {
       align: "center",
     });
 
-    // Título principal
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...this.colors.white);
+    yPosition = headerHeight + 15;
 
-    let titleText = "Habitacion en alquiler";
-    if (propertyName) {
-      const propLower = propertyName.toLowerCase();
-      if (propLower.includes("chalet")) {
-        titleText = "Habitacion en chalet";
-      } else if (propLower.includes("piso")) {
-        titleText = "Habitacion en piso";
-      } else if (propLower.includes("casa")) {
-        titleText = "Habitacion en casa";
+    // ============================================
+    // Galería de fotos (Incluyendo foto principal)
+    // ============================================
+
+    // Usar TODAS las fotos disponibles
+    const allPhotos = [...photos];
+
+    if (allPhotos.length > 0) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...this.colors.dark);
+      doc.text("Galería", margin, yPosition);
+      yPosition += 8;
+
+      const photoGap = 4;
+      const availableWidth = pageWidth - 2 * margin;
+      const cols = 2;
+      const photoWidth = (availableWidth - photoGap) / cols;
+      const defaultPhotoHeight = 55;
+
+      let col = 0;
+      let rowY = yPosition;
+
+      for (let i = 0; i < allPhotos.length; i++) {
+        try {
+          const photoUrl =
+            typeof allPhotos[i] === "string"
+              ? allPhotos[i]
+              : allPhotos[i].url || allPhotos[i];
+          const imgData = await this.loadImageAsBase64(photoUrl);
+
+          if (imgData) {
+            let finalHeight = defaultPhotoHeight;
+
+            // Intentar calcular aspect ratio nativo
+            try {
+              const img = await this._loadImage(imgData);
+              if (img && img.width && img.height) {
+                const imgAspect = img.width / img.height;
+                const calculatedHeight = photoWidth / imgAspect;
+                const maxHeight = 80; // Un poco más alto permitido
+                finalHeight = Math.min(calculatedHeight, maxHeight);
+              }
+            } catch (imgErr) {
+              console.warn("Using default height for image:", imgErr);
+            }
+
+            // Verificar espacio en página
+            if (rowY + finalHeight > pageHeight - 30) {
+              // Dejar margen abajo
+              doc.addPage();
+              rowY = margin;
+              col = 0;
+            }
+
+            const photoX = margin + col * (photoWidth + photoGap);
+
+            doc.addImage(
+              imgData,
+              "JPEG",
+              photoX,
+              rowY,
+              photoWidth,
+              finalHeight,
+              undefined,
+              "FAST"
+            );
+
+            // Borde sutil
+            doc.setDrawColor(220, 220, 220);
+            doc.setLineWidth(0.3);
+            doc.roundedRect(photoX, rowY, photoWidth, finalHeight, 2, 2, "S");
+
+            col++;
+            if (col >= cols) {
+              col = 0;
+              rowY += finalHeight + photoGap;
+            }
+          }
+        } catch (err) {
+          console.warn("Error loading gallery photo:", err);
+        }
       }
+
+      // Ajustar yPosition al final de la galería
+      if (col > 0) rowY += defaultPhotoHeight + photoGap;
+      yPosition = rowY + 10;
     }
-    doc.text(titleText, margin, heroHeight - 22);
-
-    // Ubicación bajo el título
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    const locationShort = propertyAddress ? propertyAddress.split(",")[0] : "";
-    doc.text(locationShort, margin, heroHeight - 8);
-
-    yPosition = heroHeight + 12;
 
     // ============================================
-    // Badges de características (sin emojis problemáticos)
+    // Badges de características
     // ============================================
+    // Verificar si necesitamos nueva página
+    if (yPosition > pageHeight - 60) {
+      doc.addPage();
+      yPosition = margin;
+    }
+
     const features = [];
-    if (sizeSqm) features.push({ text: `${sizeSqm} m2` });
+    if (sizeSqm) features.push({ text: `${sizeSqm} m²` });
 
     // Detectar características de zonas comunes
     const hasPool = commonRooms.some((r) =>
@@ -214,7 +235,7 @@ export const pdfService = {
     );
 
     if (hasPool) features.push({ text: "Piscina" });
-    if (hasGarden) features.push({ text: "Jardin" });
+    if (hasGarden) features.push({ text: "Jardín" });
     if (hasTerrace) features.push({ text: "Terraza" });
     if (hasParking) features.push({ text: "Parking" });
     features.push({ text: "WiFi" });
@@ -225,7 +246,8 @@ export const pdfService = {
       const badgePadding = 10;
 
       features.forEach((feat, idx) => {
-        if (idx < 5 && featureX < pageWidth - 50) {
+        if (featureX < pageWidth - 50) {
+          // Evitar salir del margen
           doc.setFontSize(9);
           const textWidth = doc.getTextWidth(feat.text);
           const badgeWidth = textWidth + badgePadding * 2;
@@ -256,10 +278,15 @@ export const pdfService = {
     // Descripción
     // ============================================
     if (description && description.trim()) {
+      if (yPosition > pageHeight - 60) {
+        doc.addPage();
+        yPosition = margin;
+      }
+
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...this.colors.dark);
-      doc.text("Sobre la habitacion", margin, yPosition);
+      doc.text("Sobre la habitación", margin, yPosition);
       yPosition += 7;
 
       doc.setFontSize(10);
@@ -269,97 +296,10 @@ export const pdfService = {
         description,
         pageWidth - 2 * margin
       );
-      doc.text(descLines.slice(0, 3), margin, yPosition); // Máximo 3 líneas
-      yPosition += Math.min(descLines.length, 3) * 5 + 8;
-    }
-
-    // ============================================
-    // Galería de fotos - RESOLUCIÓN NATIVA
-    // ============================================
-    const roomPhotos = photos.slice(1); // Excluir hero
-
-    if (roomPhotos.length > 0) {
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...this.colors.dark);
-      doc.text("Galería", margin, yPosition);
-      yPosition += 8;
-
-      const photoGap = 4;
-      const availableWidth = pageWidth - 2 * margin;
-      const cols = 2;
-      const photoWidth = (availableWidth - photoGap) / cols;
-      const defaultPhotoHeight = 55; // Altura por defecto
-
-      let col = 0;
-      let rowY = yPosition;
-
-      // Mostrar TODAS las fotos, sin límite
-      for (let i = 0; i < roomPhotos.length; i++) {
-        try {
-          const photoUrl =
-            typeof roomPhotos[i] === "string"
-              ? roomPhotos[i]
-              : roomPhotos[i].url || roomPhotos[i];
-          const imgData = await this.loadImageAsBase64(photoUrl);
-
-          if (imgData) {
-            let finalHeight = defaultPhotoHeight;
-
-            // Intentar calcular aspect ratio nativo
-            try {
-              const img = await this._loadImage(imgData);
-              if (img && img.width && img.height) {
-                const imgAspect = img.width / img.height;
-                const calculatedHeight = photoWidth / imgAspect;
-                const maxHeight = 70;
-                finalHeight = Math.min(calculatedHeight, maxHeight);
-              }
-            } catch (imgErr) {
-              // Si falla, usar altura por defecto
-              console.warn("Using default height for image:", imgErr);
-            }
-
-            // Verificar espacio en página
-            if (rowY + finalHeight > pageHeight - 70) {
-              doc.addPage();
-              rowY = margin;
-              col = 0;
-            }
-
-            const photoX = margin + col * (photoWidth + photoGap);
-
-            // Dibujar imagen
-            doc.addImage(
-              imgData,
-              "JPEG",
-              photoX,
-              rowY,
-              photoWidth,
-              finalHeight,
-              undefined,
-              "FAST"
-            );
-
-            // Borde sutil
-            doc.setDrawColor(220, 220, 220);
-            doc.setLineWidth(0.3);
-            doc.roundedRect(photoX, rowY, photoWidth, finalHeight, 2, 2, "S");
-
-            col++;
-            if (col >= cols) {
-              col = 0;
-              rowY += finalHeight + photoGap;
-            }
-          }
-        } catch (err) {
-          console.warn("Error loading gallery photo:", err);
-        }
-      }
-
-      // Ajustar yPosition
-      if (col > 0) rowY += defaultPhotoHeight + photoGap;
-      yPosition = rowY + 5;
+      // Mostrar más líneas si hay espacio
+      const maxLines = 10;
+      doc.text(descLines.slice(0, maxLines), margin, yPosition);
+      yPosition += Math.min(descLines.length, maxLines) * 5 + 8;
     }
 
     // ============================================
