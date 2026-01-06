@@ -1,5 +1,5 @@
 <script>
-  import { FileText, Download, X } from "lucide-svelte";
+  import { FileText, Download, X, File } from "lucide-svelte";
   import Modal from "../ui/Modal.svelte";
   import Button from "../ui/Button.svelte";
   import { contractService } from "$lib/services/contract";
@@ -13,6 +13,7 @@
   export let isRenewal = false; // Si es true, es una renovación de contrato
 
   let loading = false;
+  let loadingFormat = ""; // 'word' o 'pdf'
   let error = "";
 
   $: canGenerate = tenant && property;
@@ -33,47 +34,56 @@
   $: modalTitle =
     isRenewal || isExpired ? "Renovar Contrato" : "Generar Contrato";
 
-  async function handleGenerate() {
+  function getContractData() {
+    // Obtener la habitación asignada al inquilino si no se proporciona
+    let tenantRoom = room;
+    if (!tenantRoom && tenant.room) {
+      tenantRoom = tenant.room;
+    }
+
+    return {
+      tenantName: tenant.full_name || "",
+      tenantDni: tenant.dni || "",
+      tenantEmail: tenant.email || "",
+      tenantPhone: tenant.phone || "",
+      tenantCurrentAddress: tenant.current_address || "",
+      propertyName: property.name || "",
+      propertyAddress: property.address || "",
+      roomName: tenantRoom?.name || "Habitación",
+      monthlyRent: tenantRoom?.monthly_rent || tenant.monthly_rent || 0,
+      depositAmount: tenant.deposit_amount || 0,
+      startDate: tenant.contract_start_date || new Date().toISOString(),
+      endDate: tenant.contract_end_date || new Date().toISOString(),
+      contractMonths: tenant.contract_months || 6,
+      contractNotes: tenant.contract_notes || "",
+      ownerName:
+        $userStore?.user_metadata?.name ||
+        $userStore?.email?.split("@")[0] ||
+        "Propietario",
+      ownerDni: $userStore?.user_metadata?.dni || "",
+    };
+  }
+
+  async function handleGenerate(format = "word") {
     if (!canGenerate) {
       error = "Faltan datos necesarios para generar el contrato";
       return;
     }
 
     loading = true;
+    loadingFormat = format;
     error = "";
 
     try {
-      // Obtener la habitación asignada al inquilino si no se proporciona
-      let tenantRoom = room;
-      if (!tenantRoom && tenant.room) {
-        tenantRoom = tenant.room;
+      const contractData = getContractData();
+
+      if (format === "pdf") {
+        await contractService.generateContractAsPDF(contractData);
+        showToast("Contrato PDF generado correctamente", "success");
+      } else {
+        await contractService.generateContractFromTemplate(contractData);
+        showToast("Contrato Word generado correctamente", "success");
       }
-
-      // Preparar los datos del contrato
-      const contractData = {
-        tenantName: tenant.full_name || "",
-        tenantDni: tenant.dni || "",
-        tenantEmail: tenant.email || "",
-        tenantPhone: tenant.phone || "",
-        tenantCurrentAddress: tenant.current_address || "", // Domicilio actual del inquilino
-        propertyName: property.name || "",
-        propertyAddress: property.address || "", // Dirección de la propiedad
-        roomName: tenantRoom?.name || "Habitación",
-        monthlyRent: tenantRoom?.monthly_rent || tenant.monthly_rent || 0,
-        depositAmount: tenant.deposit_amount || 0,
-        startDate: tenant.contract_start_date || new Date().toISOString(),
-        endDate: tenant.contract_end_date || new Date().toISOString(),
-        contractMonths: tenant.contract_months || 6,
-        contractNotes: tenant.contract_notes || "",
-        ownerName:
-          $userStore?.user_metadata?.name ||
-          $userStore?.email?.split("@")[0] ||
-          "Propietario",
-        ownerDni: $userStore?.user_metadata?.dni || "",
-      };
-
-      await contractService.generateContractFromTemplate(contractData);
-      showToast("Contrato generado correctamente", "success");
       open = false;
     } catch (err) {
       console.error("Error generando contrato:", err);
@@ -81,6 +91,7 @@
       showToast(error, "error");
     } finally {
       loading = false;
+      loadingFormat = "";
     }
   }
 </script>
@@ -250,13 +261,28 @@
         </div>
       </div>
 
-      <div class="flex gap-3 pt-4">
-        <Button on:click={handleGenerate} disabled={loading} className="flex-1">
-          <Download size={18} class="inline mr-2" />
-          {loading ? "Generando..." : "Generar y Descargar"}
-        </Button>
+      <div class="flex flex-col gap-3 pt-4">
+        <div class="flex gap-3">
+          <Button
+            on:click={() => handleGenerate("word")}
+            disabled={loading}
+            className="flex-1"
+          >
+            <File size={18} class="inline mr-2" />
+            {loadingFormat === "word" ? "Generando..." : "Descargar Word"}
+          </Button>
+          <Button
+            on:click={() => handleGenerate("pdf")}
+            disabled={loading}
+            variant="secondary"
+            className="flex-1"
+          >
+            <Download size={18} class="inline mr-2" />
+            {loadingFormat === "pdf" ? "Generando..." : "Descargar PDF"}
+          </Button>
+        </div>
         <Button
-          variant="secondary"
+          variant="ghost"
           on:click={() => (open = false)}
           disabled={loading}
         >
