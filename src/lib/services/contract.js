@@ -275,7 +275,7 @@ export const contractService = {
         let xPos = margin;
         const maxWidth = pageWidth - 2 * margin;
 
-        // Combinar todo el texto para calcular si necesita wrap
+        // Combinar todo el texto para calcular altura total
         const fullText = parts.map((p) => p.text).join("");
         const lines = doc.splitTextToSize(fullText, maxWidth);
 
@@ -285,20 +285,37 @@ export const contractService = {
           y = margin;
         }
 
-        // Si cabe en una línea, usar posicionamiento preciso
-        if (lines.length === 1) {
-          parts.forEach((part) => {
-            doc.setFont("helvetica", part.bold ? "bold" : "normal");
-            doc.text(part.text, xPos, y);
-            xPos += doc.getTextWidth(part.text);
+        // Renderizar cada parte con su estilo
+        parts.forEach((part) => {
+          doc.setFont("helvetica", part.bold ? "bold" : "normal");
+          const partText = part.text;
+
+          // Dividir el texto de esta parte si es muy largo
+          const words = partText.split(" ");
+
+          words.forEach((word, wordIndex) => {
+            const wordWithSpace =
+              wordIndex < words.length - 1 ? word + " " : word;
+            const wordWidth = doc.getTextWidth(wordWithSpace);
+
+            // Si la palabra no cabe en la línea actual, saltar a la siguiente
+            if (xPos + wordWidth > pageWidth - margin && xPos > margin) {
+              y += lineHeight;
+              xPos = margin;
+
+              // Verificar nueva página
+              if (y > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+              }
+            }
+
+            doc.text(wordWithSpace, xPos, y);
+            xPos += wordWidth;
           });
-          y += lineHeight;
-        } else {
-          // Para texto largo, usamos el texto combinado (pierde negrita parcial)
-          doc.setFont("helvetica", "normal");
-          doc.text(lines, margin, y);
-          y += lines.length * lineHeight;
-        }
+        });
+
+        y += lineHeight;
         return y;
       };
 
@@ -374,16 +391,33 @@ export const contractService = {
 
       // === CONVENIO ===
       addText("AMBAS PARTES CONVIENEN EL ARRIENDO DE LA HABITACIÓN", 11, true);
-      addText(
-        `Que se inicia el día ${startDate} finalizando el día ${endDate}. El precio del arriendo es de ${monthlyRent}€ mensuales, estando incluidos los gastos a excepción de calefacción y electricidad que deberán ser abonados de la siguiente forma, a dividir entre todos los ocupantes de la vivienda.`,
-        10
-      );
+      addMixedText([
+        { text: "Que se inicia el día ", bold: false },
+        { text: startDate, bold: true },
+        { text: " finalizando el día ", bold: false },
+        { text: endDate, bold: true },
+        { text: ". El precio del arriendo es de ", bold: false },
+        { text: monthlyRent + "€", bold: true },
+        {
+          text: " mensuales, estando incluidos los gastos a excepción de calefacción y electricidad que deberán ser abonados de la siguiente forma, a dividir entre todos los ocupantes de la vivienda.",
+          bold: false,
+        },
+      ]);
       addSpace(3);
 
-      addText(
-        `EL DEPÓSITO que, como garantía deberá abonar el ARRENDATARIO es de ${depositAmount}€ (${depositAmountWords.toUpperCase()} EUROS), importe que le será devuelto al finalizar el contrato, bien en metálico bien por transferencia bancaria.`,
-        10
-      );
+      addMixedText([
+        {
+          text: "EL DEPÓSITO que, como garantía deberá abonar el ARRENDATARIO es de ",
+          bold: false,
+        },
+        { text: depositAmount + "€", bold: true },
+        { text: " (", bold: false },
+        { text: depositAmountWords.toUpperCase() + " EUROS", bold: true },
+        {
+          text: "), importe que le será devuelto al finalizar el contrato, bien en metálico bien por transferencia bancaria.",
+          bold: false,
+        },
+      ]);
       addSpace(3);
 
       addText(
