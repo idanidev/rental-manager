@@ -268,6 +268,40 @@ export const contractService = {
         }
       };
 
+      // Helper para añadir texto con partes en negrita
+      // Uso: addMixedText([{text: "Texto normal ", bold: false}, {text: "Texto negrita", bold: true}])
+      const addMixedText = (parts, fontSize = 10, lineHeight = 5) => {
+        doc.setFontSize(fontSize);
+        let xPos = margin;
+        const maxWidth = pageWidth - 2 * margin;
+
+        // Combinar todo el texto para calcular si necesita wrap
+        const fullText = parts.map((p) => p.text).join("");
+        const lines = doc.splitTextToSize(fullText, maxWidth);
+
+        // Verificar si necesitamos nueva página
+        if (y + lines.length * lineHeight > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+
+        // Si cabe en una línea, usar posicionamiento preciso
+        if (lines.length === 1) {
+          parts.forEach((part) => {
+            doc.setFont("helvetica", part.bold ? "bold" : "normal");
+            doc.text(part.text, xPos, y);
+            xPos += doc.getTextWidth(part.text);
+          });
+          y += lineHeight;
+        } else {
+          // Para texto largo, usamos el texto combinado (pierde negrita parcial)
+          doc.setFont("helvetica", "normal");
+          doc.text(lines, margin, y);
+          y += lines.length * lineHeight;
+        }
+        return y;
+      };
+
       // Datos formateados
       const ownerName = contractData.ownerName || "M.ª Ángeles Díaz Trillo";
       const ownerDni = contractData.ownerDni || "03093405C";
@@ -299,29 +333,43 @@ export const contractService = {
       addSpace(8);
 
       // === FECHA Y LUGAR ===
-      addText(`En Guadalajara a ${contractDate}`, 10);
+      addMixedText([
+        { text: "En Guadalajara a ", bold: false },
+        { text: contractDate, bold: true },
+      ]);
       addText("Estamos reunidos:", 10);
       addSpace(5);
 
       // === ARRENDADOR ===
       addText("COMO PARTE ARRENDADORA:", 10, true);
-      addText(
-        `D/Doña ${ownerName}, mayor de edad y titular del DNI ${ownerDni}.`,
-        10
-      );
-      addText(
-        `Propietaria de la vivienda compartida situada en ${propertyAddress}`,
-        10
-      );
+      addMixedText([
+        { text: "D/Doña ", bold: false },
+        { text: ownerName, bold: true },
+        { text: ", mayor de edad y titular del DNI ", bold: false },
+        { text: ownerDni, bold: true },
+        { text: ".", bold: false },
+      ]);
+      addMixedText([
+        {
+          text: "Propietaria de la vivienda compartida situada en ",
+          bold: false,
+        },
+        { text: propertyAddress, bold: true },
+      ]);
       addSpace(5);
 
       // === ARRENDATARIO ===
       addText("COMO PARTE ARRENDATARIA:", 10, true);
-      addText(
-        `D/Dña. ${tenantName} mayor de edad con DNI/PASAPORTE ${tenantDni}`,
-        10
-      );
-      addText(`Y con domicilio en ${tenantCurrentAddress}`, 10);
+      addMixedText([
+        { text: "D/Dña. ", bold: false },
+        { text: tenantName, bold: true },
+        { text: " mayor de edad con DNI/PASAPORTE ", bold: false },
+        { text: tenantDni, bold: true },
+      ]);
+      addMixedText([
+        { text: "Y con domicilio en ", bold: false },
+        { text: tenantCurrentAddress, bold: true },
+      ]);
       addSpace(8);
 
       // === CONVENIO ===
@@ -468,16 +516,43 @@ export const contractService = {
         addSpace(3);
       });
 
-      // Guardar
+      // Generar blob del PDF
       const fileName = `Contrato_${(
         contractData.roomName || "Habitacion"
       ).replace(/\s+/g, "_")}_${(tenantName || "Inquilino").replace(
         /\s+/g,
         "_"
       )}_${new Date().getTime()}.pdf`;
-      doc.save(fileName);
 
-      return { success: true, fileName };
+      const pdfBlob = doc.output("blob");
+      const pdfFile = new File([pdfBlob], fileName, {
+        type: "application/pdf",
+      });
+
+      // Intentar usar Web Share API si está disponible
+      if (
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare({ files: [pdfFile] })
+      ) {
+        try {
+          await navigator.share({
+            files: [pdfFile],
+            title: "Contrato de Alquiler",
+            text: `Contrato de ${tenantName}`,
+          });
+          return { success: true, fileName, shared: true };
+        } catch (shareError) {
+          // Si el usuario cancela o hay error, descargar normalmente
+          console.log("Share cancelled or failed, downloading instead");
+          doc.save(fileName);
+          return { success: true, fileName, shared: false };
+        }
+      } else {
+        // Fallback: descargar el archivo
+        doc.save(fileName);
+        return { success: true, fileName, shared: false };
+      }
     } catch (error) {
       console.error("Error generando contrato PDF:", error);
       throw new Error(error.message || "Error al generar el contrato PDF");

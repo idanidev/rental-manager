@@ -57,10 +57,8 @@
       contractMonths: tenant.contract_months || 6,
       contractNotes: tenant.contract_notes || "",
       ownerName:
-        $userStore?.user_metadata?.name ||
-        $userStore?.email?.split("@")[0] ||
-        "Propietario",
-      ownerDni: $userStore?.user_metadata?.dni || "",
+        $userStore?.user_metadata?.owner_name || "M.ª Ángeles Díaz Trillo",
+      ownerDni: $userStore?.user_metadata?.owner_dni || "03093405C",
     };
   }
 
