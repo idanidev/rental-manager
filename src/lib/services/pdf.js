@@ -42,24 +42,16 @@ export const pdfService = {
     let yPosition = 0;
 
     // ============================================
-    // PÁGINA 1: Header (Título + Precio + Ubicación)
+    // PÁGINA 1: Header (Título + Precio en línea)
     // ============================================
-    const headerHeight = 45;
+    const headerHeight = 30;
 
     // Fondo del header
     doc.setFillColor(...this.colors.primary);
     doc.rect(0, 0, pageWidth, headerHeight, "F");
 
-    // Patrón decorativo sutil en header
-    doc.setFillColor(255, 255, 255);
-    doc.setGState(new doc.GState({ opacity: 0.1 }));
-    for (let i = 0; i < 5; i++) {
-      doc.circle(pageWidth - 20 - i * 25, 15 + i * 5, 30, "F");
-    }
-    doc.setGState(new doc.GState({ opacity: 1 }));
-
     // Título principal
-    doc.setFontSize(20);
+    doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...this.colors.white);
 
@@ -76,44 +68,26 @@ export const pdfService = {
     }
     doc.text(titleText, margin, 20);
 
-    // Ubicación bajo el título
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    const locationShort = propertyAddress ? propertyAddress.split(",")[0] : "";
-    doc.text(locationShort, margin, 32);
-
-    // Badge de precio
-    const priceBoxWidth = 60;
-    const priceBoxHeight = 28;
-    const priceBoxX = pageWidth - margin - priceBoxWidth;
-    const priceBoxY = (headerHeight - priceBoxHeight) / 2;
-
-    doc.setFillColor(...this.colors.accent);
-    doc.roundedRect(
-      priceBoxX,
-      priceBoxY,
-      priceBoxWidth,
-      priceBoxHeight,
-      4,
-      4,
-      "F"
-    );
-
-    doc.setFontSize(16);
+    // Badge de precio destacado
+    const priceText = `${parseFloat(monthlyRent || 0).toFixed(0)}\u20AC/mes`;
+    doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
+    const priceWidth = doc.getTextWidth(priceText) + 20;
+    const priceHeight = 22;
+    const priceX = pageWidth - margin - priceWidth;
+    const priceY = (headerHeight - priceHeight) / 2;
+
+    // Fondo del badge
+    doc.setFillColor(...this.colors.accent);
+    doc.roundedRect(priceX, priceY, priceWidth, priceHeight, 4, 4, "F");
+
+    // Texto del precio
     doc.setTextColor(...this.colors.white);
-    const priceText = `${parseFloat(monthlyRent || 0).toFixed(0)}\u20AC`;
-    doc.text(priceText, priceBoxX + priceBoxWidth / 2, priceBoxY + 12, {
+    doc.text(priceText, priceX + priceWidth / 2, priceY + 15, {
       align: "center",
     });
 
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text("/mes", priceBoxX + priceBoxWidth / 2, priceBoxY + 20, {
-      align: "center",
-    });
-
-    yPosition = headerHeight + 15;
+    yPosition = headerHeight + 10;
 
     // ============================================
     // Galería de fotos (Incluyendo foto principal)
@@ -126,7 +100,7 @@ export const pdfService = {
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...this.colors.dark);
-      doc.text("Galería", margin, yPosition);
+      doc.text("Fotos de Habitación.", margin, yPosition);
       yPosition += 8;
 
       const photoGap = 4;
@@ -241,40 +215,47 @@ export const pdfService = {
     features.push({ text: "WiFi" });
 
     if (features.length > 0) {
-      let featureX = margin;
       const badgeHeight = 16;
       const badgePadding = 10;
 
+      // Calcular ancho total de todos los badges
+      doc.setFontSize(9);
+      const badgeWidths = features.map((feat) => {
+        const textWidth = doc.getTextWidth(feat.text);
+        return textWidth + badgePadding * 2;
+      });
+      const totalWidth =
+        badgeWidths.reduce((sum, w) => sum + w, 0) + (features.length - 1) * 6;
+
+      // Empezar centrado
+      let featureX = (pageWidth - totalWidth) / 2;
+
       features.forEach((feat, idx) => {
-        if (featureX < pageWidth - 50) {
-          // Evitar salir del margen
-          doc.setFontSize(9);
-          const textWidth = doc.getTextWidth(feat.text);
-          const badgeWidth = textWidth + badgePadding * 2;
+        const badgeWidth = badgeWidths[idx];
 
-          // Badge con borde
-          doc.setFillColor(...this.colors.lightGray);
-          doc.roundedRect(
-            featureX,
-            yPosition,
-            badgeWidth,
-            badgeHeight,
-            8,
-            8,
-            "F"
-          );
+        // Badge con borde
+        doc.setFillColor(...this.colors.lightGray);
+        doc.roundedRect(
+          featureX,
+          yPosition,
+          badgeWidth,
+          badgeHeight,
+          8,
+          8,
+          "F"
+        );
 
-          doc.setFont("helvetica", "normal");
-          doc.setTextColor(...this.colors.dark);
-          doc.text(feat.text, featureX + badgePadding, yPosition + 11);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...this.colors.dark);
+        // Centrar texto dentro del chip
+        doc.text(feat.text, featureX + badgeWidth / 2, yPosition + 11, {
+          align: "center",
+        });
 
-          featureX += badgeWidth + 6;
-        }
+        featureX += badgeWidth + 6;
       });
       yPosition += badgeHeight + 12;
-    }
-
-    // ============================================
+    } // ============================================
     // Descripción
     // ============================================
     if (description && description.trim()) {
@@ -306,6 +287,9 @@ export const pdfService = {
     // Zonas comunes - TODAS LAS FOTOS EN RESOLUCIÓN NATIVA
     // ============================================
     if (commonRooms.length > 0) {
+      // Añadir espacio extra antes de la sección
+      yPosition += 10;
+
       // Verificar espacio, si no hay suficiente ir a página 2
       if (yPosition > pageHeight - 90) {
         doc.addPage();
@@ -323,7 +307,7 @@ export const pdfService = {
       );
 
       if (roomsWithPhotos.length > 0) {
-        const commonGap = 6;
+        const commonGap = 10;
         const commonWidth = (pageWidth - 2 * margin - commonGap) / 2;
         const cols = 2;
         const defaultCommonHeight = 55; // Altura por defecto
@@ -563,6 +547,7 @@ export const pdfService = {
     doc.text(contactText, pageWidth - margin, footerY + 10, { align: "right" });
 
     // Guardar
+    const locationShort = propertyAddress ? propertyAddress.split(",")[0] : "";
     const fileName = `Anuncio_${
       locationShort.replace(/\s+/g, "_") || "Habitacion"
     }_${Date.now()}.pdf`;
