@@ -566,7 +566,18 @@ export const pdfService = {
     const fileName = `Anuncio_${
       locationShort.replace(/\s+/g, "_") || "Habitacion"
     }_${Date.now()}.pdf`;
+
     doc.save(fileName);
+
+    // Intentar abrir en nueva pestaña (especialmente útil para Android)
+    try {
+      const blob = doc.output("blob");
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank");
+    } catch (e) {
+      console.warn("No se pudo abrir el PDF en una nueva pestaña", e);
+    }
+
     return doc;
   },
 
