@@ -106,8 +106,42 @@ export const propertiesStore = createPropertiesStore();
 // Exportar el store de loading para acceso directo
 export const propertiesLoading = propertiesStore.loading;
 
-// Store para la propiedad seleccionada actualmente
-export const selectedProperty = writable(null);
+// Store para la propiedad seleccionada actualmente (con persistencia en localStorage)
+function createSelectedPropertyStore() {
+  const stored = typeof window !== 'undefined' ? localStorage.getItem('selectedPropertyId') : null;
+  const { subscribe, set } = writable(stored);
+
+  return {
+    subscribe,
+    select(propertyId) {
+      if (typeof window !== 'undefined') {
+        if (propertyId) {
+          localStorage.setItem('selectedPropertyId', propertyId);
+        } else {
+          localStorage.removeItem('selectedPropertyId');
+        }
+      }
+      set(propertyId);
+    },
+    clear() {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('selectedPropertyId');
+      }
+      set(null);
+    }
+  };
+}
+
+export const selectedPropertyId = createSelectedPropertyStore();
+
+// Store derivado para obtener el objeto completo de la propiedad seleccionada
+export const selectedProperty = derived(
+  [propertiesStore, selectedPropertyId],
+  ([$properties, $selectedId]) => {
+    if (!$selectedId) return null;
+    return $properties.find(p => p.id === $selectedId) || null;
+  }
+);
 
 // Stores derivados para estadísticas generales
 export const totalProperties = derived(

@@ -1,0 +1,196 @@
+/**
+ * RENTAL MANAGER DESIGN SYSTEM
+ * Liquid Glass Refined - v2.0.0
+ */
+
+:root {
+  /* ============================================
+     COLORES PRIMARIOS
+     ============================================ */
+
+  /* Orange */
+  --color-orange-50: #fff7ed;
+  --color-orange-100: #ffedd5;
+  --color-orange-200: #fed7aa;
+  --color-orange-300: #fdba74;
+  --color-orange-400: #fb923c;
+  --color-orange-500: #f97316;
+  --color-orange-600: #ea580c;
+  --color-orange-700: #c2410c;
+  --color-orange-800: #9a3412;
+  --color-orange-900: #7c2d12;
+
+  /* Pink */
+  --color-pink-50: #fdf2f8;
+  --color-pink-100: #fce7f3;
+  --color-pink-200: #fbcfe8;
+  --color-pink-300: #f9a8d4;
+  --color-pink-400: #f472b6;
+  --color-pink-500: #ec4899;
+  --color-pink-600: #db2777;
+  --color-pink-700: #be185d;
+  --color-pink-800: #9f1239;
+  --color-pink-900: #831843;
+
+  /* Grays */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* ============================================
+     GRADIENTES
+     ============================================ */
+
+  --gradient-primary: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #ea580c 0%, #db2777 100%);
+  --gradient-subtle: linear-gradient(
+    135deg,
+    rgba(249, 115, 22, 0.1) 0%,
+    rgba(236, 72, 153, 0.1) 100%
+  );
+  --gradient-glass: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.7) 100%
+  );
+  --gradient-shimmer: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+
+  /* ============================================
+     GLASSMORPHISM
+     ============================================ */
+
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-bg-hover: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --glass-blur: blur(20px) saturate(180%);
+
+  /* ============================================
+     SOMBRAS
+     ============================================ */
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.03),
+    0 1px 2px rgba(0, 0, 0, 0.02);
+
+  --shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.08), 0 6px 12px rgba(0, 0, 0, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.03);
+
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12), 0 10px 20px rgba(0, 0, 0, 0.08),
+    0 4px 8px rgba(0, 0, 0, 0.04);
+
+  /* ============================================
+     TIPOGRAFÍA
+     ============================================ */
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* ============================================
+     ESPACIADO
+     ============================================ */
+
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+
+  /* ============================================
+     BORDER RADIUS
+     ============================================ */
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ============================================
+     TRANSICIONES
+     ============================================ */
+
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-expo-out: cubic-bezier(0.19, 1, 0.22, 1);
+
+  /* ============================================
+     Z-INDEX
+     ============================================ */
+
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* ============================================
+   DARK MODE
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --glass-bg: rgba(31, 41, 55, 0.85);
+    --glass-bg-hover: rgba(31, 41, 55, 0.95);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --gradient-glass: linear-gradient(
+      135deg,
+      rgba(31, 41, 55, 0.9) 0%,
+      rgba(17, 24, 39, 0.8) 100%
+    );
+  }
+}
+
+/* Dark mode class override */
+.dark {
+  --glass-bg: rgba(31, 41, 55, 0.85);
+  --glass-bg-hover: rgba(31, 41, 55, 0.95);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}

@@ -83,11 +83,11 @@ export const contractService = {
         roomName: contractData.roomName || "",
         monthlyRent: parseFloat(contractData.monthlyRent || 0).toFixed(2),
         monthlyRentWords: this.numberToWords(
-          Math.floor(parseFloat(contractData.monthlyRent || 0))
+          Math.floor(parseFloat(contractData.monthlyRent || 0)),
         ),
         depositAmount: parseFloat(contractData.depositAmount || 0).toFixed(2),
         depositAmountWords: this.numberToWords(
-          Math.floor(parseFloat(contractData.depositAmount || 0))
+          Math.floor(parseFloat(contractData.depositAmount || 0)),
         ),
         startDate: formatDate(contractData.startDate),
         startDateShort: formatDateShort(contractData.startDate),
@@ -124,11 +124,11 @@ export const contractService = {
       });
 
       // Descargar el archivo
-      const fileName = `Contrato_${(
-        contractData.roomName || "Habitacion"
-      ).replace(/\s+/g, "_")}_${(
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
+      const fileName = `Contrato_Habitación_${(
         contractData.tenantName || "Inquilino"
-      ).replace(/\s+/g, "_")}_${new Date().getTime()}.docx`;
+      ).replace(/\s+/g, "_")}_${dateStr}.docx`;
       saveAs(blob, fileName);
 
       return { success: true, fileName };
@@ -332,10 +332,10 @@ export const contractService = {
       const endDate = formatDate(contractData.endDate);
       const monthlyRent = parseFloat(contractData.monthlyRent || 0).toFixed(0);
       const depositAmount = parseFloat(contractData.depositAmount || 0).toFixed(
-        0
+        0,
       );
       const depositAmountWords = this.numberToWords(
-        Math.floor(parseFloat(contractData.depositAmount || 0))
+        Math.floor(parseFloat(contractData.depositAmount || 0)),
       );
       const contractDate = formatDate(new Date().toISOString());
 
@@ -345,7 +345,7 @@ export const contractService = {
       addText(
         "CONTRATO DE ARRENDAMIENTO DE HABITACIÓN EN PISO COMPARTIDO.",
         14,
-        true
+        true,
       );
       addSpace(8);
 
@@ -422,13 +422,13 @@ export const contractService = {
 
       addText(
         "Este contrato no tiene validez como justificante de pago del arriendo, EL ARRENDADOR le deberá entregar al ARRENDATARIO un recibo como justificante de pago.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "El objeto del ARRIENDO ES EXCLUSIVAMENTE la habitación que se indica, sin derecho a utilizar otros dormitorios de la casa. En cuanto al resto del mismo, EL ARRENDADOR acepta compartir el uso de la cocina, salón, y baño común para lo que se obliga a las normas de respeto y buena convivencia.",
-        10
+        10,
       );
       addSpace(8);
 
@@ -436,7 +436,7 @@ export const contractService = {
       addText("DERECHO DE ACCESO A LA VIVIENDA DEL ARRENDADOR.", 10, true);
       addText(
         "Las partes acuerdan expresamente la renuncia del arrendatario a impedir que el arrendador pueda acceder a las zonas comunes de la vivienda. La violación de este derecho del arrendador por parte de cualquier persona que se encuentre en la vivienda será considerada causa de disolución del contrato y motivo de desahucio del arrendatario, siendo este responsable de los daños y perjuicios que el impedimento del acceso pueda ocasionar al arrendador, entre otros la perdida de beneficios por no poder arrendar otras habitaciones.",
-        10
+        10,
       );
       addSpace(5);
 
@@ -444,78 +444,78 @@ export const contractService = {
       addText("CLÁUSULA DE PREAVISO Y PERMANENCIA MENSUAL", 10, true);
       addText(
         "En caso de que el ARRENDATARIO desee dar por finalizado el contrato antes de su fecha de vencimiento, deberá comunicarlo al ARRENDADOR con un mínimo de 15 días naturales de antelación.",
-        10
+        10,
       );
       addText(
         "No obstante, aunque se haya dado el preaviso dentro de ese plazo, el ARRENDATARIO estará obligado a abonar la mensualidad completa del mes en el que abandone la habitación, no correspondiendo, en ningún caso, el prorrateo de dicho importe.",
-        10
+        10,
       );
       addSpace(5);
 
       // === RESCISIÓN ===
       addText(
         "EL ARRENDADOR podrá rescindir el contrato UNILATERALMENTE DE FORMA INMEDIATA si existen faltas en las normas del piso, o de buena convivencia entre compañeros o con el vecindario de la casa, o bien si estuviera en situación de falta de pago de la renta o suministros y/o calefacción, como también si existiera incumplimiento de cualquiera de los términos del contrato.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "EL ARRENDADOR se reserva el derecho de rescindir el contrato por cualquier causa diferente a las anteriores siempre y cuando lo comunique al arrendatario con un mes de antelación.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "Queda prohibida la introducción de terceras personas sin previo aviso al arrendador, la contratación de ningún tipo de servicios, así como la cesión PARCIAL o TOTAL de este contrato, sin previo permiso escrito de la propiedad.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "El contrato no se podrá ceder ni subarrendar de forma parcial por el arrendatario sin previo consentimiento por escrito del arrendador.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "No se permite fumar en el interior de la casa, ya que dispone de zonas, como el patio, en las que se puede fumar sin molestar al resto de inquilinos.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "EL ARRENDATARIO está obligado a cumplir las normas de la casa, respetando el descanso de todos los que habitan la casa, especialmente desde las 23:00 hasta las 8:00.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "EL ARRENDATARIO declara que el piso está en buen estado, obligándose a conservar todo con la mayor diligencia y a abonar los desperfectos que no sean debidos a un uso normal y correcto. Al finalizar el contrato, se comprobará que haya habido una correcta conservación de la casa y mobiliario. Siendo objeto de arriendo exclusivamente la habitación expresada, la propiedad conserva su derecho a entrar y salir de la casa por lo que el arrendatario se obliga a no cambiar la cerradura de la puerta. Por pérdida de llaves se abonará su importe.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "Queda terminantemente PROHIBIDA cualquier obra o alteración en el piso, sin previo permiso por escrito de la propiedad, así como la entrada de animales en el piso.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "EL ARRENDADOR no se hace responsable de pérdidas o hurtos en las habitaciones. A tal efecto todas las habitaciones tienen cerradura privada.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "EL ARRENDADOR tampoco se hace responsable de los posibles daños que pudieran surgir en los dispositivos eléctricos ajenos enchufados en la red eléctrica del piso.",
-        10
+        10,
       );
       addSpace(3);
 
       addText(
         "Y en prueba de conformidad con todo cuanto antecede, firman ambas partes en lugar y fecha indicados.",
-        10
+        10,
       );
       addSpace(15);
 
@@ -551,12 +551,11 @@ export const contractService = {
       });
 
       // Generar blob del PDF
-      const fileName = `Contrato_${(
-        contractData.roomName || "Habitacion"
-      ).replace(/\s+/g, "_")}_${(tenantName || "Inquilino").replace(
-        /\s+/g,
-        "_"
-      )}_${new Date().getTime()}.pdf`;
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
+      const fileName = `Contrato_Habitación_${(
+        tenantName || "Inquilino"
+      ).replace(/\s+/g, "_")}_${dateStr}.pdf`;
 
       const pdfBlob = doc.output("blob");
       const pdfFile = new File([pdfBlob], fileName, {

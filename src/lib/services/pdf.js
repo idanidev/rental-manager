@@ -125,7 +125,7 @@ export const pdfService = {
       16, // Cambiado de 24 a 16
       3,
       3,
-      "F"
+      "F",
     );
 
     // Texto precio - centrado (IGUAL que EN ALQUILER)
@@ -163,28 +163,28 @@ export const pdfService = {
 
     // Detectar características de zonas comunes
     const hasPool = commonRooms.some((r) =>
-      r.name?.toLowerCase().includes("piscina")
+      r.name?.toLowerCase().includes("piscina"),
     );
     const hasGarden = commonRooms.some(
       (r) =>
         r.name?.toLowerCase().includes("jardin") ||
-        r.name?.toLowerCase().includes("jardín")
+        r.name?.toLowerCase().includes("jardín"),
     );
     const hasParking = commonRooms.some(
       (r) =>
         r.name?.toLowerCase().includes("parking") ||
-        r.name?.toLowerCase().includes("garaje")
+        r.name?.toLowerCase().includes("garaje"),
     );
     const hasTerrace = commonRooms.some((r) =>
-      r.name?.toLowerCase().includes("terraza")
+      r.name?.toLowerCase().includes("terraza"),
     );
     const hasKitchen = commonRooms.some((r) =>
-      r.name?.toLowerCase().includes("cocina")
+      r.name?.toLowerCase().includes("cocina"),
     );
     const hasLiving = commonRooms.some(
       (r) =>
         r.name?.toLowerCase().includes("salón") ||
-        r.name?.toLowerCase().includes("salon")
+        r.name?.toLowerCase().includes("salon"),
     );
 
     if (hasPool) quickFeatures.push({ text: "Piscina" });
@@ -212,7 +212,7 @@ export const pdfService = {
       const chipHeight = 20;
 
       const chipWidths = quickFeatures.map(
-        (feat) => doc.getTextWidth(feat.text) + chipPadding
+        (feat) => doc.getTextWidth(feat.text) + chipPadding,
       );
       const totalChipsWidth =
         chipWidths.reduce((sum, w) => sum + w, 0) +
@@ -284,7 +284,7 @@ export const pdfService = {
         subtext: "Reembolsable",
         accentColor: this.colors.slate,
         icon: "🔒",
-      }
+      },
     );
 
     // Box 3: Disponibilidad
@@ -306,7 +306,7 @@ export const pdfService = {
         subtext: "Entrada flexible",
         accentColor: this.colors.emerald,
         icon: "✓",
-      }
+      },
     );
 
     yPosition += infoBoxHeight + 8;
@@ -324,7 +324,7 @@ export const pdfService = {
 
       const descLines = doc.splitTextToSize(
         description,
-        pageWidth - 2 * margin
+        pageWidth - 2 * margin,
       );
       const maxLines = 5;
       doc.text(descLines.slice(0, maxLines), margin, yPosition);
@@ -398,7 +398,7 @@ export const pdfService = {
               photoWidth,
               photoHeight,
               undefined,
-              "SLOW" // Máxima calidad
+              "SLOW", // Máxima calidad
             );
 
             if (useFullWidth) {
@@ -436,7 +436,7 @@ export const pdfService = {
       if (room.photos && room.photos.length > 0) {
         for (const photo of room.photos) {
           commonPhotos.push(
-            typeof photo === "string" ? photo : photo.url || photo
+            typeof photo === "string" ? photo : photo.url || photo,
           );
         }
       }
@@ -500,7 +500,7 @@ export const pdfService = {
               photoWidth,
               photoHeight,
               undefined,
-              "SLOW"
+              "SLOW",
             );
 
             if (useFullWidth) {
@@ -664,7 +664,7 @@ export const pdfService = {
       "PARTES INTERVINIENTES",
       margin,
       yPosition,
-      pageWidth
+      pageWidth,
     );
     yPosition += 14;
 
@@ -691,7 +691,7 @@ export const pdfService = {
         name: tenantName,
         dni: tenantDni,
         color: this.colors.gold,
-      }
+      },
     );
 
     yPosition += cardHeight + 18;
@@ -704,7 +704,7 @@ export const pdfService = {
       "OBJETO DEL CONTRATO",
       margin,
       yPosition,
-      pageWidth
+      pageWidth,
     );
     yPosition += 12;
 
@@ -720,7 +720,7 @@ export const pdfService = {
       "CONDICIONES ECONÓMICAS",
       margin,
       yPosition,
-      pageWidth
+      pageWidth,
     );
     yPosition += 12;
 
@@ -732,7 +732,7 @@ export const pdfService = {
       label: "DURACIÓN",
       value: `${contractMonths || 12} meses`,
       subtext: `${new Date(startDate).toLocaleDateString("es-ES")} - ${new Date(
-        endDate
+        endDate,
       ).toLocaleDateString("es-ES")}`,
       color: this.colors.navy,
     });
@@ -749,7 +749,7 @@ export const pdfService = {
         value: `${parseFloat(monthlyRent).toFixed(0)}€`,
         subtext: "Pago: primeros 5 días",
         color: this.colors.emerald,
-      }
+      },
     );
 
     // Box Fianza
@@ -766,7 +766,7 @@ export const pdfService = {
           : "1 mes",
         subtext: "Reembolsable",
         color: this.colors.gold,
-      }
+      },
     );
 
     yPosition += boxHeight + 18;
@@ -785,7 +785,7 @@ export const pdfService = {
       "OBLIGACIONES DEL ARRENDATARIO",
       margin,
       yPosition,
-      pageWidth
+      pageWidth,
     );
     yPosition += 12;
 
@@ -808,7 +808,7 @@ export const pdfService = {
 
       const lines = doc.splitTextToSize(
         obligation,
-        pageWidth - 2 * margin - 15
+        pageWidth - 2 * margin - 15,
       );
       doc.text(lines, margin + 10, yPosition);
       yPosition += lines.length * 4 + 4;
@@ -822,7 +822,7 @@ export const pdfService = {
         "CONDICIONES PARTICULARES",
         margin,
         yPosition,
-        pageWidth
+        pageWidth,
       );
       yPosition += 12;
       yPosition += addText(contractNotes, margin, yPosition, { fontSize: 10 });
@@ -844,7 +844,7 @@ export const pdfService = {
     doc.text(
       "En prueba de conformidad, ambas partes firman el presente contrato:",
       margin,
-      yPosition
+      yPosition,
     );
     yPosition += 15;
 
@@ -867,7 +867,7 @@ export const pdfService = {
       pageWidth - margin - 75,
       yPosition + 25,
       pageWidth - margin,
-      yPosition + 25
+      yPosition + 25,
     );
 
     doc.setFontSize(8);
@@ -891,14 +891,17 @@ export const pdfService = {
       `Contrato de arrendamiento de habitación · ${propertyAddress}`,
       pageWidth / 2,
       pageHeight - 5,
-      { align: "center" }
+      { align: "center" },
     );
 
     // Guardar
-    const fileName = `Contrato_${roomName}_${tenantName.replace(
+    // Guardar
+    const now = new Date();
+    const dateStr = now.toISOString().split("T")[0]; // YYYY-MM-DD
+    const fileName = `Contrato_Habitación_${tenantName.replace(
       /\s+/g,
-      "_"
-    )}_${Date.now()}.pdf`;
+      "_",
+    )}_${dateStr}.pdf`;
     doc.save(fileName);
     return doc;
   },
@@ -939,7 +942,7 @@ export const pdfService = {
     y,
     width,
     height,
-    { label, value, subtext, accentColor, icon }
+    { label, value, subtext, accentColor, icon },
   ) {
     // Fondo
     doc.setFillColor(...this.colors.pearl);
@@ -996,7 +999,7 @@ export const pdfService = {
       y + 2,
       pageWidth - margin * 2 - textWidth - 5,
       0.5,
-      "F"
+      "F",
     );
   },
 
@@ -1037,7 +1040,7 @@ export const pdfService = {
     y,
     width,
     height,
-    { label, value, subtext, color }
+    { label, value, subtext, color },
   ) {
     // Fondo
     doc.setFillColor(...this.colors.pearl);

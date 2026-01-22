@@ -1,25 +1,30 @@
 <script>
-  import { 
-    User, Mail, Phone, CreditCard, Calendar, Clock, 
-    Shield, FileText
-  } from 'lucide-svelte';
-  import Button from '../ui/Button.svelte';
-  import { tenantsService } from '$lib/services/tenants';
-  import { createEventDispatcher } from 'svelte';
-  
-  
+  import {
+    User,
+    Mail,
+    Phone,
+    CreditCard,
+    Calendar,
+    Clock,
+    Shield,
+    FileText,
+  } from "lucide-svelte";
+  import Button from "../ui/Button.svelte";
+  import { tenantsService } from "$lib/services/tenants";
+  import { createEventDispatcher } from "svelte";
+
   export let tenant = null; // Si existe, estamos editando
   export let propertyId;
   export let roomMonthlyRent = null; // Precio mensual de la habitación (opcional)
-  
+
   const dispatch = createEventDispatcher();
-  
+
   // Obtener fecha de hoy en formato YYYY-MM-DD
   function getTodayDate() {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    return today.toISOString().split("T")[0];
   }
-  
+
   // Calcular fianza por defecto (igual al precio mensual si está disponible)
   function getDefaultDeposit() {
     if (tenant?.deposit_amount) {
@@ -28,52 +33,68 @@
     if (roomMonthlyRent) {
       return roomMonthlyRent.toString();
     }
-    return '';
+    return "";
   }
-  
+
   // Calcular fecha de fin del contrato
   function calculateEndDate(startDate, months) {
-    if (!startDate || !months) return '';
+    if (!startDate || !months) return "";
     const date = new Date(startDate);
+    // Sumar meses
     date.setMonth(date.getMonth() + parseInt(months));
-    return date.toISOString().split('T')[0];
+
+    // Obtener el último día del mes objetivo
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    // new Date(year, month + 1, 0) nos da el último día del mes actual (en hora local)
+    const lastDay = new Date(year, month + 1, 0);
+
+    // Formatear manualmente para evitar problemas de zona horaria con toISOString
+    const yyyy = lastDay.getFullYear();
+    const mm = String(lastDay.getMonth() + 1).padStart(2, "0");
+    const dd = String(lastDay.getDate()).padStart(2, "0");
+
+    return `${yyyy}-${mm}-${dd}`;
   }
-  
+
   // Obtener fecha de inicio por defecto (hoy si es nuevo inquilino)
-  const defaultStartDate = tenant?.contract_start_date 
-    ? tenant.contract_start_date.split('T')[0] 
+  const defaultStartDate = tenant?.contract_start_date
+    ? tenant.contract_start_date.split("T")[0]
     : getTodayDate();
-  
+
   // Obtener duración por defecto
   const defaultMonths = tenant?.contract_months || 6;
-  
+
   // Calcular fecha de fin por defecto
   const defaultEndDate = tenant?.contract_end_date
-    ? tenant.contract_end_date.split('T')[0]
+    ? tenant.contract_end_date.split("T")[0]
     : calculateEndDate(defaultStartDate, defaultMonths);
-  
+
   let formData = {
     property_id: propertyId,
-    full_name: tenant?.full_name || '',
-    email: tenant?.email || '',
-    phone: tenant?.phone || '',
-    dni: tenant?.dni || '',
-    current_address: tenant?.current_address || '',
+    full_name: tenant?.full_name || "",
+    email: tenant?.email || "",
+    phone: tenant?.phone || "",
+    dni: tenant?.dni || "",
+    current_address: tenant?.current_address || "",
     contract_start_date: defaultStartDate,
     contract_months: defaultMonths,
     contract_end_date: defaultEndDate,
     deposit_amount: getDefaultDeposit(),
-    contract_notes: tenant?.contract_notes || '',
-    notes: tenant?.notes || '',
-    active: tenant?.active !== undefined ? tenant.active : true
+    contract_notes: tenant?.contract_notes || "",
+    notes: tenant?.notes || "",
+    active: tenant?.active !== undefined ? tenant.active : true,
   };
-  
+
   let loading = false;
-  let error = '';
+  let error = "";
 
   // Calcular fecha de fin del contrato automáticamente cuando cambian la fecha de inicio o la duración
   $: if (formData.contract_start_date && formData.contract_months) {
-    const calculatedEndDate = calculateEndDate(formData.contract_start_date, formData.contract_months);
+    const calculatedEndDate = calculateEndDate(
+      formData.contract_start_date,
+      formData.contract_months,
+    );
     if (calculatedEndDate !== formData.contract_end_date) {
       formData.contract_end_date = calculatedEndDate;
     }
@@ -81,26 +102,26 @@
 
   async function handleSubmit() {
     if (!formData.full_name) {
-      error = 'El nombre completo es obligatorio';
+      error = "El nombre completo es obligatorio";
       return;
     }
 
     loading = true;
-    error = '';
+    error = "";
 
     try {
       let result;
       if (tenant?.id) {
         // Actualizar inquilino existente
         result = await tenantsService.updateTenant(tenant.id, formData);
-        dispatch('success', { tenant: result, action: 'update' });
+        dispatch("success", { tenant: result, action: "update" });
       } else {
         // Crear nuevo inquilino
         result = await tenantsService.createTenant(formData);
-        dispatch('success', { tenant: result, action: 'create' });
+        dispatch("success", { tenant: result, action: "create" });
       }
     } catch (err) {
-      error = err.message || 'Error al guardar el inquilino';
+      error = err.message || "Error al guardar el inquilino";
     } finally {
       loading = false;
     }
@@ -109,7 +130,9 @@
 
 <form on:submit|preventDefault={handleSubmit} class="space-y-6">
   {#if error}
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">
+    <div
+      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl"
+    >
       {error}
     </div>
   {/if}
@@ -187,7 +210,8 @@
         class="input-glass"
       />
       <p class="text-xs text-gray-500 mt-1">
-        💡 Este domicilio se usará en el contrato. Debe ser diferente de la dirección de la propiedad.
+        💡 Este domicilio se usará en el contrato. Debe ser diferente de la
+        dirección de la propiedad.
       </p>
     </div>
   </div>
@@ -228,18 +252,27 @@
     </div>
 
     {#if formData.contract_end_date}
-      {@const endDate = formData.contract_end_date ? (() => {
-        try {
-          const date = new Date(formData.contract_end_date);
-          return isNaN(date.getTime()) ? null : date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
-        } catch {
-          return null;
-        }
-      })() : null}
+      {@const endDate = formData.contract_end_date
+        ? (() => {
+            try {
+              const date = new Date(formData.contract_end_date);
+              return isNaN(date.getTime())
+                ? null
+                : date.toLocaleDateString("es-ES", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  });
+            } catch {
+              return null;
+            }
+          })()
+        : null}
       {#if endDate}
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
           <p class="text-sm text-blue-800">
-            📅 <strong>Fecha de vencimiento:</strong> {endDate}
+            📅 <strong>Fecha de vencimiento:</strong>
+            {endDate}
           </p>
         </div>
       {/if}
@@ -259,7 +292,9 @@
         step="0.01"
       />
       <p class="text-xs text-gray-500 mt-1">
-        💡 {roomMonthlyRent ? `La fianza por defecto es igual a la renta mensual (${roomMonthlyRent}€). Puedes modificarla si es necesario.` : 'La renta mensual se define en la habitación, no en el inquilino'}
+        💡 {roomMonthlyRent
+          ? `La fianza por defecto es igual a la renta mensual (${roomMonthlyRent}€). Puedes modificarla si es necesario.`
+          : "La renta mensual se define en la habitación, no en el inquilino"}
       </p>
     </div>
 
@@ -304,7 +339,9 @@
         </span>
       </label>
       <p class="text-xs text-gray-500 mt-1 ml-6">
-        {formData.active ? 'El inquilino está actualmente en la propiedad' : 'El inquilino ya no vive en la propiedad'}
+        {formData.active
+          ? "El inquilino está actualmente en la propiedad"
+          : "El inquilino ya no vive en la propiedad"}
       </p>
     </div>
   {/if}
@@ -313,19 +350,20 @@
   <div class="flex gap-3 pt-4">
     <Button type="submit" disabled={loading} className="flex-1">
       {#if loading}
-        <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2 inline-block"></div>
+        <div
+          class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2 inline-block"
+        ></div>
       {/if}
-      {tenant?.id ? 'Actualizar' : 'Crear'} Inquilino
+      {tenant?.id ? "Actualizar" : "Crear"} Inquilino
     </Button>
-    
-    <Button 
-      type="button" 
-      variant="secondary" 
-      on:click={() => dispatch('cancel')}
+
+    <Button
+      type="button"
+      variant="secondary"
+      on:click={() => dispatch("cancel")}
       disabled={loading}
     >
       Cancelar
     </Button>
   </div>
 </form>
-

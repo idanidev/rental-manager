@@ -34,11 +34,44 @@
   $: modalTitle =
     isRenewal || isExpired ? "Renovar Contrato" : "Generar Contrato";
 
+  // Precalcular datos del contrato para vista previa
+  $: contractData = canGenerate ? getContractData() : null;
+
   function getContractData() {
     // Obtener la habitación asignada al inquilino si no se proporciona
     let tenantRoom = room;
     if (!tenantRoom && tenant.room) {
       tenantRoom = tenant.room;
+    }
+
+    // Si es renovación, calcular nuevas fechas (solo fin, respetando inicio)
+    let startDate = tenant.contract_start_date || new Date().toISOString();
+    let endDate = tenant.contract_end_date || new Date().toISOString();
+
+    if (isRenewal) {
+      try {
+        // Corrección: Fecha inicio renovación = Fecha fin actual + 1 día
+        if (tenant.contract_end_date) {
+          const currentEnd = new Date(tenant.contract_end_date);
+          const nextDay = new Date(currentEnd);
+          nextDay.setDate(nextDay.getDate() + 1);
+          startDate = nextDay.toISOString();
+        }
+
+        // Calculamos fecha fin = nueva fecha inicio + duración -> fin de mes
+        const months = tenant.contract_months || 6;
+        const start = new Date(startDate);
+        const newEnd = new Date(start);
+        newEnd.setMonth(newEnd.getMonth() + parseInt(months));
+
+        // Ajustar a fin de mes
+        const year = newEnd.getFullYear();
+        const month = newEnd.getMonth();
+        const lastDay = new Date(year, month + 1, 0);
+        endDate = lastDay.toISOString();
+      } catch (err) {
+        console.error("Error calculando fechas de renovación:", err);
+      }
     }
 
     return {
@@ -52,8 +85,8 @@
       roomName: tenantRoom?.name || "Habitación",
       monthlyRent: tenantRoom?.monthly_rent || tenant.monthly_rent || 0,
       depositAmount: tenant.deposit_amount || 0,
-      startDate: tenant.contract_start_date || new Date().toISOString(),
-      endDate: tenant.contract_end_date || new Date().toISOString(),
+      startDate: startDate,
+      endDate: endDate,
       contractMonths: tenant.contract_months || 6,
       contractNotes: tenant.contract_notes || "",
       ownerName:
@@ -197,23 +230,21 @@
             </span>
           </div>
 
-          {#if tenant.contract_start_date}
-            {@const startDate = tenant.contract_start_date
-              ? (() => {
-                  try {
-                    const date = new Date(tenant.contract_start_date);
-                    return isNaN(date.getTime())
-                      ? null
-                      : date.toLocaleDateString("es-ES");
-                  } catch {
-                    return null;
-                  }
-                })()
-              : null}
+          {#if contractData?.startDate}
+            {@const startDate = (() => {
+              try {
+                const date = new Date(contractData.startDate);
+                return isNaN(date.getTime())
+                  ? null
+                  : date.toLocaleDateString("es-ES");
+              } catch {
+                return null;
+              }
+            })()}
             {#if startDate}
               <div>
                 <span class="font-semibold text-gray-700 dark:text-gray-300"
-                  >Fecha inicio:</span
+                  >Fecha inicio {isRenewal ? "(Renovación)" : ""}:</span
                 >
                 <span class="ml-2 text-gray-600 dark:text-gray-400">
                   {startDate}
@@ -222,23 +253,21 @@
             {/if}
           {/if}
 
-          {#if tenant.contract_end_date}
-            {@const endDate = tenant.contract_end_date
-              ? (() => {
-                  try {
-                    const date = new Date(tenant.contract_end_date);
-                    return isNaN(date.getTime())
-                      ? null
-                      : date.toLocaleDateString("es-ES");
-                  } catch {
-                    return null;
-                  }
-                })()
-              : null}
+          {#if contractData?.endDate}
+            {@const endDate = (() => {
+              try {
+                const date = new Date(contractData.endDate);
+                return isNaN(date.getTime())
+                  ? null
+                  : date.toLocaleDateString("es-ES");
+              } catch {
+                return null;
+              }
+            })()}
             {#if endDate}
               <div>
                 <span class="font-semibold text-gray-700 dark:text-gray-300"
-                  >Fecha fin:</span
+                  >Fecha fin {isRenewal ? "(Renovación)" : ""}:</span
                 >
                 <span class="ml-2 text-gray-600 dark:text-gray-400">
                   {endDate}
