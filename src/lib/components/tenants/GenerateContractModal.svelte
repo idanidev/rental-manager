@@ -37,6 +37,20 @@
   // Precalcular datos del contrato para vista previa
   $: contractData = canGenerate ? getContractData() : null;
 
+  // Helper para calcular fecha fin (igual que en TenantForm)
+  function calculateEndDate(startDate, months) {
+    if (!startDate || !months) return "";
+    const date = new Date(startDate);
+    date.setMonth(date.getMonth() + parseInt(months));
+
+    // Obtener último día del mes
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const lastDay = new Date(year, month + 1, 0); // día 0 del siguiente mes = último día mes actual
+
+    return lastDay.toISOString();
+  }
+
   function getContractData() {
     // Obtener la habitación asignada al inquilino si no se proporciona
     let tenantRoom = room;
@@ -60,17 +74,21 @@
 
         // Calculamos fecha fin = nueva fecha inicio + duración -> fin de mes
         const months = tenant.contract_months || 6;
-        const start = new Date(startDate);
-        const newEnd = new Date(start);
-        newEnd.setMonth(newEnd.getMonth() + parseInt(months));
-
-        // Ajustar a fin de mes
-        const year = newEnd.getFullYear();
-        const month = newEnd.getMonth();
-        const lastDay = new Date(year, month + 1, 0);
-        endDate = lastDay.toISOString();
+        endDate = calculateEndDate(startDate, months);
       } catch (err) {
         console.error("Error calculando fechas de renovación:", err);
+      }
+    } else {
+      // Si NO es renovación (es ver actual o generar nuevo), recalculamos la fecha fin
+      // para asegurar consistencia con la duración (meses)
+      try {
+        const months = tenant.contract_months || 6;
+        // Solo recalculamos si tenemos start_date, de lo contrario fallback a lo guardado
+        if (tenant.contract_start_date) {
+          endDate = calculateEndDate(tenant.contract_start_date, months);
+        }
+      } catch (err) {
+        console.error("Error recalculando fecha fin contrato:", err);
       }
     }
 

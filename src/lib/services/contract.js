@@ -2,6 +2,7 @@ import Docxtemplater from "docxtemplater";
 import PizZip from "pizzip";
 import pkg from "file-saver";
 import jsPDF from "jspdf";
+import { robotoRegular, robotoBold } from "./fonts";
 const { saveAs } = pkg;
 
 /**
@@ -227,6 +228,24 @@ export const contractService = {
   async generateContractAsPDF(contractData) {
     try {
       const doc = new jsPDF();
+
+      // Debug: verificar que las fuentes existen
+      if (!robotoRegular || !robotoBold) {
+        console.error("Fuentes Roboto no encontradas");
+        // Fallback
+      } else {
+        // Registrar fuentes personalizadas para soportar UTF-8
+        // Es importante usar el nombre exacto del archivo en VFS
+        doc.addFileToVFS("Roboto-Regular.ttf", robotoRegular);
+        doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+
+        doc.addFileToVFS("Roboto-Bold.ttf", robotoBold);
+        doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+
+        // Establecer fuente por defecto inmediatamente
+        doc.setFont("Roboto", "normal");
+      }
+
       const pageWidth = doc.internal.pageSize.width;
       const pageHeight = doc.internal.pageSize.height;
       const margin = 15;
@@ -246,7 +265,7 @@ export const contractService = {
       // Helper para añadir texto con wrap
       const addText = (text, fontSize = 10, isBold = false, lineHeight = 5) => {
         doc.setFontSize(fontSize);
-        doc.setFont("helvetica", isBold ? "bold" : "normal");
+        doc.setFont("Roboto", isBold ? "bold" : "normal");
         const lines = doc.splitTextToSize(text, pageWidth - 2 * margin);
 
         // Verificar si necesitamos nueva página
@@ -287,7 +306,7 @@ export const contractService = {
 
         // Renderizar cada parte con su estilo
         parts.forEach((part) => {
-          doc.setFont("helvetica", part.bold ? "bold" : "normal");
+          doc.setFont("Roboto", part.bold ? "bold" : "normal");
           const partText = part.text;
 
           // Dividir el texto de esta parte si es muy largo
@@ -382,9 +401,7 @@ export const contractService = {
         { text: tenantName, bold: true },
         { text: " mayor de edad con DNI/PASAPORTE ", bold: false },
         { text: tenantDni, bold: true },
-      ]);
-      addMixedText([
-        { text: "Y con domicilio en ", bold: false },
+        { text: " Y con domicilio en ", bold: false },
         { text: tenantCurrentAddress, bold: true },
       ]);
       addSpace(8);
