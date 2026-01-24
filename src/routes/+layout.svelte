@@ -10,7 +10,17 @@
   import { propertiesStore } from "$lib/stores/properties";
   import { authService } from "$lib/services/auth";
   import { supabase } from "$lib/services/supabase";
-  import { LogOut, Menu, Moon, Sun, User, Settings, Bell } from "lucide-svelte";
+  import {
+    LogOut,
+    Menu,
+    Moon,
+    Sun,
+    User,
+    Settings,
+    Bell,
+    Building2,
+    ChevronDown,
+  } from "lucide-svelte";
   import Toast from "$lib/components/ui/Toast.svelte";
   import { theme } from "$lib/stores/theme";
   import { permissionsService } from "$lib/services/permissions";
@@ -20,6 +30,8 @@
   import { notificationsStore } from "$lib/stores/notifications";
   import BottomNav from "$lib/components/navigation/BottomNav.svelte";
   import InstallPrompt from "$lib/components/pwa/InstallPrompt.svelte";
+  import PropertySelectorSheet from "$lib/components/navigation/PropertySelectorSheet.svelte";
+  import { selectedPropertyId, selectedProperty } from "$lib/stores/properties";
 
   // No necesitamos exportar data/params en el layout
 
@@ -27,6 +39,7 @@
   let loading = true;
   let propertiesLoaded = false;
   let isInitialized = false;
+  let showPropertySheet = false;
 
   // Handler para cambios de autenticación
   async function handleAuthChange(e) {
@@ -295,6 +308,22 @@
             >
           </a>
 
+          <!-- Desktop Property Selector (solo visible en pantallas grandes) -->
+          <button
+            on:click={() => (showPropertySheet = true)}
+            class="hidden lg:flex items-center gap-2 px-4 py-2 rounded-2xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ml-4"
+          >
+            <Building2 size={18} class="text-orange-500" />
+            <span
+              class="text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[150px] truncate"
+            >
+              {$selectedProperty
+                ? $selectedProperty.name
+                : "Seleccionar propiedad"}
+            </span>
+            <ChevronDown size={16} class="text-gray-400" />
+          </button>
+
           <!-- Notificaciones y User Menu -->
           <div class="flex items-center gap-3">
             <!-- Notificaciones -->
@@ -452,3 +481,6 @@
 
 <!-- PWA Install Prompt -->
 <InstallPrompt />
+
+<!-- Property Selector Sheet (for desktop) -->
+<PropertySelectorSheet bind:isOpen={showPropertySheet} />
