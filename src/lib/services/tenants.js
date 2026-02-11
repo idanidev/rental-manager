@@ -1,13 +1,13 @@
-import { supabase, handleSupabaseError } from './supabase';
+import { supabase, handleSupabaseError } from "./supabase";
 
 export const tenantsService = {
   // Obtener todos los inquilinos de una propiedad
   async getPropertyTenants(propertyId) {
-
     try {
       const { data, error } = await supabase
-        .from('tenants')
-        .select(`
+        .from("tenants")
+        .select(
+          `
           *,
           room:rooms!rooms_tenant_id_fkey(
             id,
@@ -16,35 +16,35 @@ export const tenantsService = {
             size_sqm,
             room_type
           )
-        `)
-        .eq('property_id', propertyId)
-        .order('active', { ascending: false })
-        .order('full_name');
+        `,
+        )
+        .eq("property_id", propertyId)
+        .order("active", { ascending: false })
+        .order("full_name");
 
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching tenants:', error);
-      throw new Error(handleSupabaseError(error, 'getPropertyTenants'));
+      console.error("Error fetching tenants:", error);
+      throw new Error(handleSupabaseError(error, "getPropertyTenants"));
     }
   },
 
   // Obtener inquilinos activos de una propiedad
   async getActiveTenants(propertyId) {
-
     try {
       const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('property_id', propertyId)
-        .eq('active', true)
-        .order('full_name');
+        .from("tenants")
+        .select("*")
+        .eq("property_id", propertyId)
+        .eq("active", true)
+        .order("full_name");
 
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching active tenants:', error);
-      throw new Error(handleSupabaseError(error, 'getActiveTenants'));
+      console.error("Error fetching active tenants:", error);
+      throw new Error(handleSupabaseError(error, "getActiveTenants"));
     }
   },
 
@@ -53,38 +53,43 @@ export const tenantsService = {
     try {
       // Obtener todos los inquilinos de la propiedad con su habitación asignada
       const { data: allTenants, error: tenantsError } = await supabase
-        .from('tenants')
-        .select(`
+        .from("tenants")
+        .select(
+          `
           *,
           room:rooms!rooms_tenant_id_fkey(id)
-        `)
-        .eq('property_id', propertyId)
-        .order('active', { ascending: false })
-        .order('full_name');
+        `,
+        )
+        .eq("property_id", propertyId)
+        .order("active", { ascending: false })
+        .order("full_name");
 
       if (tenantsError) throw tenantsError;
 
       // Filtrar: solo mostrar inquilinos que NO tienen habitación asignada
       // Esto incluye tanto activos como inactivos sin habitación
-      const available = (allTenants || []).filter(tenant => {
+      const available = (allTenants || []).filter((tenant) => {
         // Si no tiene habitación asignada (room es null o array vacío), está disponible
-        return !tenant.room || (Array.isArray(tenant.room) && tenant.room.length === 0);
+        return (
+          !tenant.room ||
+          (Array.isArray(tenant.room) && tenant.room.length === 0)
+        );
       });
 
       return available;
     } catch (error) {
-      console.error('Error fetching available tenants:', error);
-      throw new Error(handleSupabaseError(error, 'getAvailableTenants'));
+      console.error("Error fetching available tenants:", error);
+      throw new Error(handleSupabaseError(error, "getAvailableTenants"));
     }
   },
 
   // Obtener un inquilino por ID
   async getTenantById(tenantId) {
-
     try {
       const { data, error } = await supabase
-        .from('tenants')
-        .select(`
+        .from("tenants")
+        .select(
+          `
           *,
           room:rooms!rooms_tenant_id_fkey(
             id,
@@ -93,15 +98,16 @@ export const tenantsService = {
             size_sqm,
             room_type
           )
-        `)
-        .eq('id', tenantId)
+        `,
+        )
+        .eq("id", tenantId)
         .single();
 
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error fetching tenant:', error);
-      throw new Error(handleSupabaseError(error, 'getTenantById'));
+      console.error("Error fetching tenant:", error);
+      throw new Error(handleSupabaseError(error, "getTenantById"));
     }
   },
 
@@ -110,11 +116,11 @@ export const tenantsService = {
     try {
       // Validar datos requeridos
       if (!tenantData.property_id || !tenantData.full_name) {
-        throw new Error('Propiedad y nombre completo son obligatorios');
+        throw new Error("Propiedad y nombre completo son obligatorios");
       }
 
       const { data, error } = await supabase
-        .from('tenants')
+        .from("tenants")
         .insert([tenantData])
         .select()
         .single();
@@ -122,8 +128,8 @@ export const tenantsService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating tenant:', error);
-      throw new Error(handleSupabaseError(error, 'createTenant'));
+      console.error("Error creating tenant:", error);
+      throw new Error(handleSupabaseError(error, "createTenant"));
     }
   },
 
@@ -131,17 +137,17 @@ export const tenantsService = {
   async updateTenant(tenantId, updates) {
     try {
       const { data, error } = await supabase
-        .from('tenants')
+        .from("tenants")
         .update(updates)
-        .eq('id', tenantId)
+        .eq("id", tenantId)
         .select()
         .single();
 
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating tenant:', error);
-      throw new Error(handleSupabaseError(error, 'updateTenant'));
+      console.error("Error updating tenant:", error);
+      throw new Error(handleSupabaseError(error, "updateTenant"));
     }
   },
 
@@ -149,15 +155,15 @@ export const tenantsService = {
   async deleteTenant(tenantId) {
     try {
       const { error } = await supabase
-        .from('tenants')
+        .from("tenants")
         .delete()
-        .eq('id', tenantId);
+        .eq("id", tenantId);
 
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error deleting tenant:', error);
-      throw new Error(handleSupabaseError(error, 'deleteTenant'));
+      console.error("Error deleting tenant:", error);
+      throw new Error(handleSupabaseError(error, "deleteTenant"));
     }
   },
 
@@ -173,65 +179,111 @@ export const tenantsService = {
 
   // Asignar inquilino a habitación
   async assignToRoom(tenantId, roomId) {
-
     try {
-      const { error } = await supabase.rpc('assign_tenant_to_room', {
+      const { error } = await supabase.rpc("assign_tenant_to_room", {
         p_tenant_id: tenantId,
-        p_room_id: roomId
+        p_room_id: roomId,
       });
 
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error assigning tenant to room:', error);
-      throw new Error(handleSupabaseError(error, 'assignToRoom'));
+      console.error("Error assigning tenant to room:", error);
+      throw new Error(handleSupabaseError(error, "assignToRoom"));
     }
   },
 
   // Desasignar inquilino de habitación
   async unassignFromRoom(roomId) {
-
     try {
-      const { error } = await supabase.rpc('unassign_tenant_from_room', {
-        p_room_id: roomId
+      const { error } = await supabase.rpc("unassign_tenant_from_room", {
+        p_room_id: roomId,
       });
 
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error unassigning tenant from room:', error);
-      throw new Error(handleSupabaseError(error, 'unassignFromRoom'));
+      console.error("Error unassigning tenant from room:", error);
+      throw new Error(handleSupabaseError(error, "unassignFromRoom"));
     }
   },
 
   // Obtener contratos que vencen pronto
   async getExpiringContracts(daysAhead = 30) {
     try {
-      const { data, error } = await supabase.rpc('get_expiring_contracts', {
-        days_ahead: daysAhead
+      const { data, error } = await supabase.rpc("get_expiring_contracts", {
+        days_ahead: daysAhead,
       });
 
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching expiring contracts:', error);
-      throw new Error(handleSupabaseError(error, 'getExpiringContracts'));
+      console.error("Error fetching expiring contracts:", error);
+      throw new Error(handleSupabaseError(error, "getExpiringContracts"));
+    }
+  },
+
+  // Renovar contrato automáticamente
+  async renewContract(tenantId, contractMonths = null) {
+    try {
+      // Obtener el inquilino actual para validar datos
+      const tenant = await this.getTenantById(tenantId);
+
+      if (!tenant.contract_end_date) {
+        throw new Error("El inquilino no tiene fecha de fin de contrato");
+      }
+
+      // Calcular nueva fecha de inicio: día siguiente al fin actual
+      const currentEndDate = new Date(tenant.contract_end_date);
+      const newStartDate = new Date(currentEndDate);
+      newStartDate.setDate(newStartDate.getDate() + 1);
+
+      // Usar duración del contrato actual o la especificada
+      const months = contractMonths || tenant.contract_months || 6;
+
+      // Calcular nueva fecha de fin: último día del mes después de sumar meses
+      const newEndDate = new Date(newStartDate);
+      newEndDate.setMonth(newEndDate.getMonth() + parseInt(months));
+
+      // Obtener último día del mes
+      const year = newEndDate.getFullYear();
+      const month = newEndDate.getMonth();
+      const lastDayOfMonth = new Date(year, month + 1, 0);
+
+      // Actualizar solo las fechas del contrato, nunca modificar original_start_date
+      const updates = {
+        contract_start_date: newStartDate.toISOString(),
+        contract_end_date: lastDayOfMonth.toISOString(),
+        contract_months: months,
+      };
+
+      const { data, error } = await supabase
+        .from("tenants")
+        .update(updates)
+        .eq("id", tenantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error renewing contract:", error);
+      throw new Error(handleSupabaseError(error, "renewContract"));
     }
   },
 
   // Obtener estadísticas de inquilinos de una propiedad
   async getTenantStats(propertyId) {
     const tenants = await this.getPropertyTenants(propertyId);
-    
+
     return {
       total: tenants.length,
-      active: tenants.filter(t => t.active).length,
-      inactive: tenants.filter(t => !t.active).length,
-      withContract: tenants.filter(t => t.contract_start_date).length,
+      active: tenants.filter((t) => t.active).length,
+      inactive: tenants.filter((t) => !t.active).length,
+      withContract: tenants.filter((t) => t.contract_start_date).length,
       totalMonthlyRent: tenants
-        .filter(t => t.active && t.room?.monthly_rent)
-        .reduce((sum, t) => sum + parseFloat(t.room?.monthly_rent || 0), 0)
+        .filter((t) => t.active && t.room?.monthly_rent)
+        .reduce((sum, t) => sum + parseFloat(t.room?.monthly_rent || 0), 0),
     };
-  }
+  },
 };
-

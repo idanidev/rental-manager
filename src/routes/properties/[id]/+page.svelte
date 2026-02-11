@@ -41,6 +41,8 @@
   import IncomeCard from "$lib/components/finances/IncomeCard.svelte";
   import IncomeForm from "$lib/components/finances/IncomeForm.svelte";
   import Modal from "$lib/components/ui/Modal.svelte";
+  import ConfirmModal from "$lib/components/ui/ConfirmModal.svelte";
+  import RenewContractModal from "$lib/components/tenants/RenewContractModal.svelte";
   import { permissionsService } from "$lib/services/permissions";
   import { showToast } from "$lib/stores/toast";
 
@@ -53,6 +55,11 @@
   let income = [];
   let loading = true;
   let error = "";
+
+  // Auto-renew confirm modal state
+  let showRenewConfirm = false;
+  let renewTenant = null;
+  let renewLoading = false;
   let showEditModal = false;
   let showRoomModal = false;
   let showTenantModal = false;
@@ -256,6 +263,12 @@
       showToast("Error al actualizar el ingreso", "error");
       console.error(err);
     }
+  }
+
+  async function handleAutoRenew(e) {
+    const { tenant } = e.detail;
+    renewTenant = tenant;
+    showRenewConfirm = true;
   }
 
   const canEdit = () => userRole === "owner" || userRole === "editor";
@@ -611,7 +624,7 @@
             </div>
 
             {#if tenants.length > 0}
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                 {#each tenants as tenant (tenant.id)}
                   {@const tenantRoom = rooms.find(
                     (r) => r.tenant_id === tenant.id,
@@ -627,12 +640,7 @@
                       isRenewalContract = e.detail.isRenewal || false;
                       showContractModal = true;
                     }}
-                    on:renew-contract={(e) => {
-                      contractTenant = e.detail.tenant;
-                      contractRoom = e.detail.room || tenantRoom;
-                      isRenewalContract = true;
-                      showContractModal = true;
-                    }}
+                    on:auto-renew={handleAutoRenew}
                     on:edit={(e) => {
                       selectedTenantForEdit = e.detail.tenant;
                       showEditTenantModal = true;
@@ -941,3 +949,14 @@
     }}
   />
 {/if}
+
+<!-- Modal Renovar Contrato -->
+<RenewContractModal
+  bind:open={showRenewConfirm}
+  tenant={renewTenant}
+  on:success={() => {
+    showRenewConfirm = false;
+    renewTenant = null;
+    loadAllData();
+  }}
+/>

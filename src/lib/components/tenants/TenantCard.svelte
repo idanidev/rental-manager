@@ -1,13 +1,14 @@
 <script>
   import {
     User,
-    Mail,
     Phone,
     Calendar,
     Euro,
     AlertCircle,
     FileText,
     Edit,
+    MoreVertical,
+    RefreshCw,
   } from "lucide-svelte";
   import GlassCard from "../ui/GlassCard.svelte";
   import { createEventDispatcher } from "svelte";
@@ -19,6 +20,12 @@
   export let propertyId = null;
 
   const dispatch = createEventDispatcher();
+
+  // Estado del menú contextual
+  let showMenu = false;
+  let menuButton;
+  let menuX = 0;
+  let menuY = 0;
 
   // Función helper para formatear fechas de forma segura
   function formatDate(
@@ -54,161 +61,185 @@
     daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
   $: isExpired = daysUntilExpiry !== null && daysUntilExpiry < 0;
 
-  function handleGenerateContract(e) {
-    e.stopPropagation();
+  function toggleMenu() {
+    if (!showMenu && menuButton) {
+      const rect = menuButton.getBoundingClientRect();
+      menuX = rect.right - 200;
+      menuY = rect.bottom + 4;
+      // Asegurar que no se salga de la pantalla por la izquierda
+      if (menuX < 8) menuX = 8;
+    }
+    showMenu = !showMenu;
+  }
+
+  function closeMenu() {
+    showMenu = false;
+  }
+
+  function handleEdit() {
+    closeMenu();
+    dispatch("edit", { tenant });
+  }
+
+  function handleAutoRenew() {
+    closeMenu();
+    dispatch("auto-renew", { tenant });
+  }
+
+  function handleGenerateContract() {
+    closeMenu();
     dispatch("generate-contract", {
       tenant,
       property,
       room,
-      isRenewal: isExpired,
+      isRenewal: false,
     });
-  }
-
-  function handleRenewContract(e) {
-    e.stopPropagation();
-    dispatch("renew-contract", { tenant, property, room });
-  }
-
-  function handleEdit(e) {
-    e.stopPropagation();
-    dispatch("edit", { tenant });
   }
 
   function handleCardClick() {
     if (onClick) {
       onClick();
-    } else {
-      // Si no hay onClick personalizado, abrir edición por defecto
-      dispatch("edit", { tenant });
     }
   }
 </script>
 
-<GlassCard>
-  <button
-    on:click={handleCardClick}
-    class="w-full text-left space-y-3 relative"
-  >
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div
-          class="p-3 {tenant.active
-            ? 'gradient-primary'
-            : 'bg-gray-400'} rounded-xl"
-        >
-          <User size={24} class="text-white" />
-        </div>
-        <div>
-          <h4 class="text-lg font-bold text-gray-800">
+<GlassCard className="!p-3 hover:shadow-lg transition-shadow">
+  <div class="flex items-center gap-3">
+    <!-- Clickable card content -->
+    <button
+      type="button"
+      on:click={handleCardClick}
+      class="flex-1 flex items-center gap-3 text-left min-w-0"
+    >
+      <!-- Avatar -->
+      <div
+        class="p-2.5 {tenant.active
+          ? 'gradient-primary'
+          : 'bg-gray-400'} rounded-lg flex-shrink-0"
+      >
+        <User size={20} class="text-white" />
+      </div>
+
+      <!-- Main Info -->
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1">
+          <h4
+            class="text-base font-bold text-gray-800 dark:text-gray-200 truncate"
+          >
             {tenant.full_name}
           </h4>
-          {#if tenant.email}
-            <div class="flex items-center text-sm text-gray-600 mt-1">
-              <Mail size={14} class="mr-1" />
-              {tenant.email}
+          <span
+            class="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 {tenant.active
+              ? 'bg-green-100 text-green-700'
+              : 'bg-gray-100 text-gray-700'}"
+          >
+            {tenant.active ? "Activo" : "Inactivo"}
+          </span>
+        </div>
+
+        <div
+          class="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 mb-1"
+        >
+          {#if tenant.phone}
+            <div class="flex items-center gap-1">
+              <Phone size={12} />
+              <span class="truncate">{tenant.phone}</span>
             </div>
           {/if}
+          {#if tenant.room?.monthly_rent}
+            <div class="flex items-center gap-1">
+              <Euro size={12} class="text-orange-600" />
+              <span class="font-semibold">{tenant.room.monthly_rent}€</span>
+            </div>
+          {/if}
+          {#if tenant.contract_end_date}
+            {@const formattedDate = formatDate(tenant.contract_end_date)}
+            {#if formattedDate}
+              <div class="flex items-center gap-1">
+                <Calendar size={12} class="text-pink-600" />
+                <span>{formattedDate}</span>
+              </div>
+            {/if}
+          {/if}
         </div>
-      </div>
 
-      <!-- Estado -->
-      <span
-        class="px-3 py-1 rounded-full text-xs font-semibold
-        {tenant.active
-          ? 'bg-green-100 text-green-700'
-          : 'bg-gray-100 text-gray-700'}"
-      >
-        {tenant.active ? "Activo" : "Inactivo"}
-      </span>
-    </div>
-
-    <!-- Datos de Contacto -->
-    {#if tenant.phone}
-      <div class="flex items-center gap-2 text-sm text-gray-600">
-        <Phone size={14} />
-        <span>{tenant.phone}</span>
-      </div>
-    {/if}
-
-    <!-- Datos del Contrato -->
-    <div class="grid grid-cols-2 gap-3">
-      {#if tenant.room?.monthly_rent}
-        <div class="flex items-center gap-2 text-sm">
-          <Euro size={16} class="text-orange-600" />
-          <span class="font-semibold">{tenant.room.monthly_rent}€/mes</span>
-        </div>
-      {/if}
-
-      {#if tenant.contract_end_date}
-        {@const formattedDate = formatDate(tenant.contract_end_date)}
-        {#if formattedDate}
-          <div class="flex items-center gap-2 text-sm">
-            <Calendar size={16} class="text-pink-600" />
-            <span class="font-semibold">
-              {formattedDate}
-            </span>
+        {#if tenant.active && isExpiringSoon}
+          <div
+            class="flex items-center gap-1 text-xs text-yellow-700 dark:text-yellow-500"
+          >
+            <AlertCircle size={12} />
+            <span class="font-medium">Vence en {daysUntilExpiry} días</span>
+          </div>
+        {:else if tenant.active && isExpired}
+          <div
+            class="flex items-center gap-1 text-xs text-red-700 dark:text-red-500"
+          >
+            <AlertCircle size={12} />
+            <span class="font-medium">Contrato vencido</span>
           </div>
         {/if}
-      {/if}
-    </div>
-
-    <!-- Alerta de Contrato -->
-    {#if tenant.active && isExpiringSoon}
-      <div
-        class="bg-yellow-50 border border-yellow-200 rounded-lg p-2 flex items-center gap-2"
-      >
-        <AlertCircle size={16} class="text-yellow-600 flex-shrink-0" />
-        <p class="text-xs text-yellow-800">
-          <strong>Contrato vence en {daysUntilExpiry} días</strong>
-        </p>
       </div>
-    {:else if tenant.active && isExpired}
-      <div
-        class="bg-red-50 border border-red-200 rounded-lg p-2 flex items-center gap-2"
-      >
-        <AlertCircle size={16} class="text-red-600 flex-shrink-0" />
-        <p class="text-xs text-red-800">
-          <strong>Contrato vencido</strong>
-        </p>
-      </div>
-    {/if}
-  </button>
+    </button>
 
-  <!-- Botones de Acción -->
+    <!-- Menu Button -->
+    <button
+      type="button"
+      bind:this={menuButton}
+      on:click|stopPropagation={toggleMenu}
+      class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+      aria-label="Más opciones"
+    >
+      <MoreVertical size={18} class="text-gray-600 dark:text-gray-400" />
+    </button>
+  </div>
+</GlassCard>
+
+<!-- Menu rendered OUTSIDE GlassCard to escape overflow:hidden -->
+{#if showMenu}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="fixed inset-0 z-[9998]" on:click={closeMenu}></div>
+
   <div
-    class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2"
+    class="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[200px]"
+    style="top: {menuY}px; left: {menuX}px;"
   >
     <button
+      type="button"
       on:click={handleEdit}
-      class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium"
+      class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-left text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors border-b border-gray-100 dark:border-gray-700"
     >
-      <Edit size={16} />
-      Editar Inquilino
+      <Edit size={16} class="text-blue-500" />
+      <span>Editar</span>
     </button>
+
     {#if tenant.contract_end_date}
       <button
-        on:click={handleRenewContract}
-        class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-lg transition-colors text-sm font-medium shadow-md"
+        type="button"
+        on:click={handleAutoRenew}
+        class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-left text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors border-b border-gray-100 dark:border-gray-700"
       >
-        <FileText size={16} />
-        Renovar Contrato
+        <RefreshCw size={16} class="text-green-500" />
+        <span>Renovar</span>
       </button>
+
       <button
+        type="button"
         on:click={handleGenerateContract}
-        class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm font-medium"
+        class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-left text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
       >
-        <FileText size={16} />
-        Ver Documento Actual
+        <FileText size={16} class="text-orange-500" />
+        <span>Documentos</span>
       </button>
     {:else}
       <button
+        type="button"
         on:click={handleGenerateContract}
-        class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors text-sm font-medium"
+        class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 text-left text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors"
       >
-        <FileText size={16} />
-        Generar Contrato
+        <FileText size={16} class="text-orange-500" />
+        <span>Generar Contrato</span>
       </button>
     {/if}
   </div>
-</GlassCard>
+{/if}

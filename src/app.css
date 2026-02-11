@@ -108,8 +108,16 @@
   .glass-card {
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
-    @apply rounded-3xl p-2 transition-all duration-300;
-    border: 1px solid rgba(253, 186, 116, 0.15);
+    @apply rounded-3xl p-6 transition-all duration-300; /* Increased padding for breathability */
+    border: 1px solid rgba(255, 255, 255, 0.3); /* Higher contrast border */
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.05),
+      0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Softer shadow */
+  }
+
+  :root[data-theme="dark"] .glass-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(30, 41, 59, 0.8); /* More opaque for contrast */
   }
 
   /* Menú dropdown completamente opaco - sin translucidez */

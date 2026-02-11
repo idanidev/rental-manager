@@ -167,12 +167,16 @@
           aria-label={item.label}
           aria-current={active ? "page" : undefined}
         >
-          {#if active}
-            <div class="active-indicator"></div>
-          {/if}
-
-          <div class="icon-wrapper" class:gradient-icon={item.id === "select"}>
-            <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+          <div class="icon-container" class:active>
+            <div
+              class="icon-wrapper"
+              class:gradient-icon={item.id === "select"}
+            >
+              <Icon
+                size={item.id === "select" ? 22 : 24}
+                strokeWidth={active ? 2.5 : 2}
+              />
+            </div>
           </div>
 
           <span class="label">{item.label}</span>
@@ -192,20 +196,22 @@
     left: 0;
     right: 0;
     z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(255, 255, 255, 0.85); /* Slightly more transparent base */
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.04);
   }
 
   .bottom-nav-container {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     display: flex;
     justify-content: space-around;
-    align-items: stretch;
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    align-items: center;
+    height: 64px;
+    padding: 0 16px;
+    max-width: 600px;
+    margin: 0 auto;
   }
 
   .nav-item {
@@ -219,83 +225,75 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
-    padding: 10px 6px 8px;
-    min-height: 60px;
+    height: 100%;
     position: relative;
-    transition: all 200ms ease-out;
     -webkit-tap-highlight-color: transparent;
-    color: #9ca3af;
+    color: #94a3b8; /* Slate-400 */
+    transition: color 0.2s ease;
   }
 
   .nav-item:active {
-    transform: scale(0.92);
+    transform: scale(0.96);
   }
 
-  .nav-item.active {
+  /* Icon Container (The Pill) */
+  .icon-container {
+    position: relative;
+    padding: 4px 16px;
+    border-radius: 20px;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+  }
+
+  .icon-container.active {
+    background-color: rgba(
+      249,
+      115,
+      22,
+      0.15
+    ); /* Orange-500 optimized opacity */
+    color: #f97316; /* Orange-500 */
+  }
+
+  /* Active Label Color */
+  .nav-item.active .label {
     color: #f97316;
-    background: rgba(249, 115, 22, 0.1);
+    font-weight: 600;
+  }
+
+  /* Special Action Button (Select Property) */
+  .nav-item.action-btn .icon-wrapper.gradient-icon {
+    background: linear-gradient(135deg, #f97316, #ec4899);
     border-radius: 12px;
+    color: white;
+    width: 40px;
+    height: 40px;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    transition: transform 0.2s;
   }
 
-  .nav-item.action-btn {
-    color: #f97316;
-  }
-
-  .active-indicator {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 32px;
-    height: 4px;
-    background: linear-gradient(90deg, #f97316, #ec4899);
-    border-radius: 0 0 4px 4px;
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.4);
+  .nav-item.action-btn:active .icon-wrapper.gradient-icon {
+    transform: scale(0.95);
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.2);
   }
 
   .icon-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-  }
-
-  .icon-wrapper.gradient-icon {
-    background: linear-gradient(135deg, #f97316, #ec4899);
-    border-radius: 10px;
-    color: white;
-    width: 36px;
-    height: 36px;
-    margin-bottom: -2px;
+    width: 24px;
+    height: 24px;
   }
 
   .label {
-    font-size: 0.65rem;
+    font-size: 0.7rem; /* 11px derived */
     font-weight: 500;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
-  }
-
-  .nav-item.active .label {
-    font-weight: 700;
-  }
-
-  .nav-item.long-press {
-    position: relative;
-  }
-
-  .nav-item.long-press::after {
-    content: "⋯";
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    font-size: 10px;
-    opacity: 0.4;
+    transition: color 0.2s ease;
   }
 
   /* Hide on desktop */
@@ -305,28 +303,31 @@
     }
   }
 
+  /* Dark Mode */
   @media (prefers-color-scheme: dark) {
-    .bottom-nav-container {
-      background: rgba(17, 24, 39, 0.95);
-      border-color: rgba(255, 255, 255, 0.08);
+    .bottom-nav {
+      background: rgba(15, 23, 42, 0.85); /* Slate-900 base */
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
     }
 
     .nav-item {
-      color: #6b7280;
+      color: #64748b; /* Slate-500 */
     }
 
-    .nav-item.active {
-      color: #f97316;
-      background: rgba(249, 115, 22, 0.15);
+    .icon-container.active {
+      background-color: rgba(249, 115, 22, 0.2);
+      color: #fb923c; /* Orange-400 */
     }
 
-    .nav-item.action-btn {
-      color: #f97316;
+    .nav-item.active .label {
+      color: #fb923c;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .nav-item {
+    .nav-item,
+    .icon-container {
       transition: none;
     }
     .nav-item:active {
